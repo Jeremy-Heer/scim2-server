@@ -57,7 +57,7 @@
 		<dependency>
 			<groupId>com.unboundid.product.scim2</groupId>
 			<artifactId>scim2-sdk-common</artifactId>
-			<version>3.1.0</version>
+			<version>4.0.0</version>
 		</dependency>
 		
 		<!-- Jackson for JSON processing -->
