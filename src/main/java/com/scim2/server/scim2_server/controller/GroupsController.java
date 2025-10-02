@@ -6,6 +6,9 @@ import com.scim2.server.scim2_server.service.JsonFileService;
 import com.scim2.server.scim2_server.model.ScimListResponse;
 import com.unboundid.scim2.common.types.GroupResource;
 import com.unboundid.scim2.common.types.Meta;
+import com.unboundid.scim2.common.messages.PatchRequest;
+import com.unboundid.scim2.common.messages.SearchRequest;
+import com.unboundid.scim2.common.exceptions.ScimException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -16,6 +19,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.util.Collections;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -36,16 +42,21 @@ public class GroupsController {
         this.jsonFileService = jsonFileService;
     }
     
-    @Operation(summary = "List Groups", description = "Retrieve all groups with optional filtering and pagination")
+    @Operation(summary = "List Groups", description = "Retrieve all groups with optional filtering, sorting, pagination, and attribute selection")
     @ApiResponse(responseCode = "200", description = "Groups retrieved successfully")
     @GetMapping(produces = "application/scim+json")
     public ResponseEntity<ScimListResponse<GroupResource>> getGroups(
             @Parameter(description = "SCIM filter expression") @RequestParam(required = false) String filter,
+            @Parameter(description = "Comma-separated list of attribute names to return") @RequestParam(required = false) String attributes,
+            @Parameter(description = "Comma-separated list of attribute names to exclude") @RequestParam(required = false) String excludedAttributes,
+            @Parameter(description = "Attribute name to sort by") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Sort order: 'ascending' or 'descending'") @RequestParam(required = false) String sortOrder,
             @Parameter(description = "1-based index of the first result") @RequestParam(required = false) Integer startIndex,
             @Parameter(description = "Number of results per page") @RequestParam(required = false) Integer count) {
         
-        List<GroupResource> groups = jsonFileService.searchGroups(filter, startIndex, count);
-        int totalResults = jsonFileService.getAllGroups().size();
+        List<GroupResource> groups = jsonFileService.searchGroups(filter, attributes, excludedAttributes, 
+                                                                  sortBy, sortOrder, startIndex, count);
+        int totalResults = jsonFileService.getTotalGroups(filter);
         
         ScimListResponse<GroupResource> response = new ScimListResponse<>(
             totalResults,
@@ -58,12 +69,15 @@ public class GroupsController {
             .body(response);
     }
     
-    @Operation(summary = "Get Group", description = "Retrieve a specific group by ID")
+    @Operation(summary = "Get Group", description = "Retrieve a specific group by ID with optional attribute selection")
     @ApiResponse(responseCode = "200", description = "Group found")
     @ApiResponse(responseCode = "404", description = "Group not found", content = @Content)
     @GetMapping(value = "/{id}", produces = "application/scim+json")
-    public ResponseEntity<GroupResource> getGroup(@PathVariable String id) {
-        GroupResource group = jsonFileService.getGroupById(id);
+    public ResponseEntity<GroupResource> getGroup(
+            @PathVariable String id,
+            @Parameter(description = "Comma-separated list of attribute names to return") @RequestParam(required = false) String attributes,
+            @Parameter(description = "Comma-separated list of attribute names to exclude") @RequestParam(required = false) String excludedAttributes) {
+        GroupResource group = jsonFileService.getGroupById(id, attributes, excludedAttributes);
         if (group == null) {
             throw new ResourceNotFoundException("Group", id);
         }
@@ -152,6 +166,51 @@ public class GroupsController {
         }
         
         return ResponseEntity.noContent().build();
+    }
+    
+    @Operation(summary = "Patch Group", description = "Partially modify a group using SCIM PATCH operations")
+    @ApiResponse(responseCode = "200", description = "Group patched successfully")
+    @ApiResponse(responseCode = "404", description = "Group not found", content = @Content)
+    @ApiResponse(responseCode = "400", description = "Invalid patch request", content = @Content)
+    @PatchMapping(value = "/{id}", consumes = "application/scim+json", produces = "application/scim+json")
+    public ResponseEntity<GroupResource> patchGroup(@PathVariable String id, @RequestBody PatchRequest patchRequest, HttpServletRequest request) {
+        GroupResource existingGroup = jsonFileService.getGroupById(id);
+        if (existingGroup == null) {
+            throw new ResourceNotFoundException("Group", id);
+        }
+        
+        GroupResource patchedGroup = jsonFileService.patchGroup(id, patchRequest);
+        
+        // Update meta information
+        Meta meta = patchedGroup.getMeta();
+        if (meta == null) {
+            meta = new Meta();
+            meta.setResourceType("Group");
+        }
+        meta.setLastModified(Calendar.getInstance());
+        meta.setLocation(URI.create(request.getRequestURL().toString()));
+        patchedGroup.setMeta(meta);
+        
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType("application/scim+json"))
+            .body(patchedGroup);
+    }
+    
+    @PostMapping("/.search")
+    public ResponseEntity<ScimListResponse<GroupResource>> searchGroups(@RequestBody SearchRequest searchRequest) throws ScimException, IOException {
+        List<GroupResource> groups = jsonFileService.searchGroups(searchRequest);
+        int totalResults = jsonFileService.getTotalGroups(searchRequest);
+        
+        ScimListResponse<GroupResource> response = new ScimListResponse<>();
+        response.setSchemas(Collections.singletonList("urn:ietf:params:scim:api:messages:2.0:ListResponse"));
+        response.setTotalResults(totalResults);
+        response.setStartIndex(searchRequest.getStartIndex() != null ? searchRequest.getStartIndex() : 1);
+        response.setItemsPerPage(searchRequest.getCount() != null ? searchRequest.getCount() : totalResults);
+        response.setResources(groups);
+        
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType("application/scim+json"))
+            .body(response);
     }
     
     private void validateGroup(GroupResource group) {

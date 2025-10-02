@@ -1,0 +1,15 @@
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "add",
+      "path": "members",
+      "value": [
+        {
+          "value": "902c246b-6245-4190-8e05-6c8a36bfe2a0",
+          "display": "John Smith"
+        }
+      ]
+    }
+  ]
+}

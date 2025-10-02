@@ -6,6 +6,10 @@ import com.scim2.server.scim2_server.security.SecurityConfig;
 import com.unboundid.scim2.common.types.UserResource;
 import com.unboundid.scim2.common.types.Name;
 import com.unboundid.scim2.common.types.Email;
+import com.unboundid.scim2.common.messages.PatchRequest;
+import com.unboundid.scim2.common.messages.PatchOperation;
+import com.unboundid.scim2.common.Path;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +20,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -59,14 +64,88 @@ public class UsersControllerTest {
     @Test
     @WithMockUser
     void testGetUsers_Success() throws Exception {
-        when(jsonFileService.searchUsers(any(), any(), any()))
+        when(jsonFileService.searchUsers(any(), any(), any(), any(), any(), any(), any()))
             .thenReturn(Arrays.asList(testUser));
-        when(jsonFileService.getAllUsers())
-            .thenReturn(Arrays.asList(testUser));
+        when(jsonFileService.getTotalUsers(anyString()))
+            .thenReturn(1);
         
         mockMvc.perform(get("/scim/v2/Users")
                 .header("Authorization", "Bearer scim-token-123")
                 .contentType("application/scim+json"))
                 .andExpect(status().isOk());
+    }
+    
+    @Test
+    @WithMockUser
+    void testPatchUser_Success() throws Exception {
+        String userId = testUser.getId();
+        UserResource patchedUser = new UserResource();
+        patchedUser.setId(userId);
+        patchedUser.setUserName("testuser");
+        patchedUser.setDisplayName("Updated Display Name");
+        patchedUser.setActive(false);
+        
+        when(jsonFileService.getUserById(userId)).thenReturn(testUser);
+        when(jsonFileService.patchUser(eq(userId), any(PatchRequest.class))).thenReturn(patchedUser);
+        
+        String patchBody = """
+            {
+                "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+                "Operations": [
+                    {
+                        "op": "replace",
+                        "path": "displayName",
+                        "value": "Updated Display Name"
+                    },
+                    {
+                        "op": "replace",
+                        "path": "active",
+                        "value": false
+                    }
+                ]
+            }
+            """;
+        
+        mockMvc.perform(patch("/scim/v2/Users/" + userId)
+                .header("Authorization", "Bearer scim-token-123")
+                .contentType("application/scim+json")
+                .content(patchBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(userId))
+                .andExpect(jsonPath("$.displayName").value("Updated Display Name"))
+                .andExpect(jsonPath("$.active").value(false));
+        
+        verify(jsonFileService).getUserById(userId);
+        verify(jsonFileService).patchUser(eq(userId), any(PatchRequest.class));
+    }
+    
+    @Test
+    @WithMockUser  
+    void testPatchUser_NotFound() throws Exception {
+        String userId = "nonexistent-id";
+        
+        when(jsonFileService.getUserById(userId)).thenReturn(null);
+        
+        String patchBody = """
+            {
+                "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+                "Operations": [
+                    {
+                        "op": "replace",
+                        "path": "displayName",
+                        "value": "Updated Display Name"
+                    }
+                ]
+            }
+            """;
+        
+        mockMvc.perform(patch("/scim/v2/Users/" + userId)
+                .header("Authorization", "Bearer scim-token-123")
+                .contentType("application/scim+json")
+                .content(patchBody))
+                .andExpect(status().isNotFound());
+        
+        verify(jsonFileService).getUserById(userId);
+        verify(jsonFileService, never()).patchUser(any(), any());
     }
 }

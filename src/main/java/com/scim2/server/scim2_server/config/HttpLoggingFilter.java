@@ -158,11 +158,6 @@ public class HttpLoggingFilter implements Filter {
                     response.getCharacterEncoding() : "UTF-8";
                 String responseBody = new String(contentAsByteArray, encoding);
                 
-                // Truncate very long responses for readability
-                if (responseBody.length() > 2000) {
-                    return responseBody.substring(0, 2000) + "\n... [Response truncated - total length: " + responseBody.length() + " characters]";
-                }
-                
                 return responseBody;
             } catch (UnsupportedEncodingException e) {
                 logger.warn("Failed to decode response body", e);

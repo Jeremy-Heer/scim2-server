@@ -2,13 +2,13 @@ package com.scim2.server.scim2_server.exception;
 
 import com.unboundid.scim2.common.exceptions.ScimException;
 import com.unboundid.scim2.common.messages.ErrorResponse;
-import com.unboundid.scim2.common.types.Meta;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
-import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.context.request.ServletWebRequest;
 
 @RestControllerAdvice
 public class ScimExceptionHandler {
@@ -45,11 +45,23 @@ public class ScimExceptionHandler {
         return ResponseEntity.status(ex.getScimError().getStatus()).body(errorResponse);
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleJsonParseException(HttpMessageNotReadableException ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value());
+        errorResponse.setDetail("Invalid JSON format in request body");
+        errorResponse.setScimType("invalidSyntax");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, WebRequest request) {
         // Don't handle exceptions for OpenAPI/Swagger endpoints
-        String requestUri = ((jakarta.servlet.http.HttpServletRequest) request).getRequestURI();
-        if (requestUri.startsWith("/v3/api-docs") || requestUri.startsWith("/swagger-ui")) {
+        String requestUri = null;
+        if (request instanceof ServletWebRequest) {
+            requestUri = ((ServletWebRequest) request).getRequest().getRequestURI();
+        }
+        
+        if (requestUri != null && (requestUri.startsWith("/v3/api-docs") || requestUri.startsWith("/swagger-ui"))) {
             throw new RuntimeException(ex); // Re-throw to let SpringDoc handle it
         }
         
