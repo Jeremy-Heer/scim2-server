@@ -1,7 +1,7 @@
 package com.scim2.server.scim2_server.controller;
 
 import com.scim2.server.scim2_server.exception.InvalidRequestException;
-import com.scim2.server.scim2_server.service.JsonFileService;
+import com.scim2.server.scim2_server.repository.ScimRepository;
 import com.unboundid.scim2.common.types.GroupResource;
 import com.unboundid.scim2.common.types.Member;
 import com.unboundid.scim2.common.types.UserResource;
@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 class GroupsControllerValidationTest {
 
     @Mock
-    private JsonFileService jsonFileService;
+    private ScimRepository scimRepository;
 
     @InjectMocks
     private GroupsController groupsController;
@@ -45,14 +45,14 @@ class GroupsControllerValidationTest {
     @Test
     void testValidMemberIsAccepted() {
         // Arrange
-        when(jsonFileService.getUserById("test-user-id-123")).thenReturn(testUser);
+        when(scimRepository.getUserById("test-user-id-123")).thenReturn(testUser);
         
         Member member = new Member();
         member.setValue("test-user-id-123");
         member.setDisplay("Test User");
         testGroup.setMembers(Arrays.asList(member));
         
-        when(jsonFileService.saveGroup(any(GroupResource.class))).thenReturn(testGroup);
+        when(scimRepository.saveGroup(any(GroupResource.class))).thenReturn(testGroup);
         
         // Mock the HttpServletRequest properly
         jakarta.servlet.http.HttpServletRequest mockRequest = mock(jakarta.servlet.http.HttpServletRequest.class);
@@ -63,13 +63,13 @@ class GroupsControllerValidationTest {
             groupsController.createGroup(testGroup, mockRequest);
         });
         
-        verify(jsonFileService).getUserById("test-user-id-123");
+        verify(scimRepository).getUserById("test-user-id-123");
     }
 
     @Test
     void testInvalidMemberIdIsRejected() {
         // Arrange
-        when(jsonFileService.getUserById("nonexistent-user-id")).thenReturn(null);
+        when(scimRepository.getUserById("nonexistent-user-id")).thenReturn(null);
         
         Member member = new Member();
         member.setValue("nonexistent-user-id");
@@ -82,7 +82,7 @@ class GroupsControllerValidationTest {
         });
         
         assertEquals("Member with id 'nonexistent-user-id' does not exist in the system", exception.getMessage());
-        verify(jsonFileService).getUserById("nonexistent-user-id");
+        verify(scimRepository).getUserById("nonexistent-user-id");
     }
 
     @Test
@@ -120,7 +120,7 @@ class GroupsControllerValidationTest {
     @Test
     void testDuplicateMembersAreRejected() {
         // Arrange
-        when(jsonFileService.getUserById("test-user-id-123")).thenReturn(testUser);
+        when(scimRepository.getUserById("test-user-id-123")).thenReturn(testUser);
         
         Member member1 = new Member();
         member1.setValue("test-user-id-123");
@@ -143,7 +143,7 @@ class GroupsControllerValidationTest {
     @Test
     void testValidRefIsAccepted() {
         // Arrange
-        when(jsonFileService.getUserById("test-user-id-123")).thenReturn(testUser);
+        when(scimRepository.getUserById("test-user-id-123")).thenReturn(testUser);
         
         Member member = new Member();
         member.setValue("test-user-id-123");
@@ -151,7 +151,7 @@ class GroupsControllerValidationTest {
         member.setRef(URI.create("https://example.com/scim/v2/Users/test-user-id-123"));
         testGroup.setMembers(Arrays.asList(member));
         
-        when(jsonFileService.saveGroup(any(GroupResource.class))).thenReturn(testGroup);
+        when(scimRepository.saveGroup(any(GroupResource.class))).thenReturn(testGroup);
         
         // Mock the HttpServletRequest properly
         jakarta.servlet.http.HttpServletRequest mockRequest = mock(jakarta.servlet.http.HttpServletRequest.class);
@@ -162,14 +162,14 @@ class GroupsControllerValidationTest {
             groupsController.createGroup(testGroup, mockRequest);
         });
         
-        verify(jsonFileService, times(2)).getUserById("test-user-id-123"); // Once for value, once for $ref
+        verify(scimRepository, times(2)).getUserById("test-user-id-123"); // Once for value, once for $ref
     }
 
     @Test
     void testMismatchedRefIsRejected() {
         // Arrange
-        when(jsonFileService.getUserById("test-user-id-123")).thenReturn(testUser);
-        when(jsonFileService.getUserById("different-user-id")).thenReturn(testUser);
+        when(scimRepository.getUserById("test-user-id-123")).thenReturn(testUser);
+        when(scimRepository.getUserById("different-user-id")).thenReturn(testUser);
         
         Member member = new Member();
         member.setValue("test-user-id-123");
@@ -188,7 +188,7 @@ class GroupsControllerValidationTest {
     @Test
     void testInvalidRefFormatIsRejected() {
         // Arrange
-        when(jsonFileService.getUserById("test-user-id-123")).thenReturn(testUser);
+        when(scimRepository.getUserById("test-user-id-123")).thenReturn(testUser);
         
         Member member = new Member();
         member.setValue("test-user-id-123");

@@ -1,0 +1,276 @@
+# ==============================================================================
+# SCIM2 LDAP Schema Extensions for PingDirectory
+# ==============================================================================
+# This schema extends standard LDAP schema (inetOrgPerson, groupOfNames) to
+# support full SCIM2 (RFC 7643/7644) attribute mapping.
+#
+# INSTALLATION:
+# 1. Copy this file to PingDirectory: config/schema/99-scim2-schema.ldif
+# 2. Restart PingDirectory or use: dsconfig set-schema-provider-prop
+# 3. Verify schema loaded: ldapsearch -b "cn=schema" -s base "objectClass=*" attributeTypes
+#
+# SCIM ID MAPPING:
+# - SCIM "id" property is mapped directly to the LDAP "entryUUID" operational attribute
+# - No custom scimId attribute is needed - entryUUID is automatically assigned by the server
+# - When using Name-with-entryUUID control, DNs are: entryUUID=<uuid>,<parent-dn>
+#
+# OID Arc: 1.3.6.1.4.1.99999 (TEST/PRIVATE USE - Replace with your enterprise OID)
+# Base: 1.3.6.1.4.1.99999.1 - Attribute Types
+#       1.3.6.1.4.1.99999.2 - Object Classes
+# ==============================================================================
+
+dn: cn=schema
+# ------------------------------------------------------------------------------
+# Core SCIM User Attributes (Simple Types)
+# ------------------------------------------------------------------------------
+attributeTypes: ( 1.3.6.1.4.1.99999.1.2
+  NAME 'scimExternalId'
+  DESC 'SCIM External System Identifier'
+  EQUALITY caseIgnoreMatch
+  SUBSTR caseIgnoreSubstringsMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.3
+  NAME 'scimActive'
+  DESC 'SCIM User Active Status (true/false)'
+  EQUALITY booleanMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+  SINGLE-VALUE )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.4
+  NAME 'scimMiddleName'
+  DESC 'SCIM User Middle Name'
+  EQUALITY caseIgnoreMatch
+  SUBSTR caseIgnoreSubstringsMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.5
+  NAME 'scimHonorificSuffix'
+  DESC 'SCIM User Honorific Suffix (Jr., III, etc.)'
+  EQUALITY caseIgnoreMatch
+  SUBSTR caseIgnoreSubstringsMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.6
+  NAME 'scimNickName'
+  DESC 'SCIM User Nickname'
+  EQUALITY caseIgnoreMatch
+  SUBSTR caseIgnoreSubstringsMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.7
+  NAME 'scimLocale'
+  DESC 'SCIM User Locale (e.g., en_US)'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.8
+  NAME 'scimTimezone'
+  DESC 'SCIM User Timezone'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.9
+  NAME 'scimProfileUrl'
+  DESC 'SCIM User Profile URL'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.10
+  NAME 'scimUserType'
+  DESC 'SCIM User Type (Employee, Contractor, etc.)'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE )
+#
+# ------------------------------------------------------------------------------
+# SCIM Multi-Valued Complex Attributes (JSON Type)
+# ------------------------------------------------------------------------------
+# Using PingDirectory JSON attribute type for complex multi-valued attributes
+# Supports JSON object filtering as documented in UnboundID LDAP SDK
+# Syntax: 1.3.6.1.4.1.30221.2.3.4 (JSON Object)
+# ------------------------------------------------------------------------------
+attributeTypes: ( 1.3.6.1.4.1.99999.1.20
+  NAME 'scimEmails'
+  DESC 'SCIM Email Addresses (JSON Objects, Multi-Valued)'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.30221.2.3.4
+  X-ORIGIN 'SCIM2 Schema'
+  X-JSON-QUERY-MATCHING-RULE 'caseIgnoreJsonQueryMatch' )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.21
+  NAME 'scimPhoneNumbers'
+  DESC 'SCIM Phone Numbers (JSON Objects, Multi-Valued)'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.30221.2.3.4
+  X-ORIGIN 'SCIM2 Schema'
+  X-JSON-QUERY-MATCHING-RULE 'caseIgnoreJsonQueryMatch' )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.22
+  NAME 'scimAddresses'
+  DESC 'SCIM Addresses (JSON Objects, Multi-Valued)'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.30221.2.3.4
+  X-ORIGIN 'SCIM2 Schema'
+  X-JSON-QUERY-MATCHING-RULE 'caseIgnoreJsonQueryMatch' )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.23
+  NAME 'scimIms'
+  DESC 'SCIM Instant Messaging Addresses (JSON Objects, Multi-Valued)'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.30221.2.3.4
+  X-ORIGIN 'SCIM2 Schema'
+  X-JSON-QUERY-MATCHING-RULE 'caseIgnoreJsonQueryMatch' )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.24
+  NAME 'scimPhotos'
+  DESC 'SCIM Photos (JSON Objects, Multi-Valued)'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.30221.2.3.4
+  X-ORIGIN 'SCIM2 Schema'
+  X-JSON-QUERY-MATCHING-RULE 'caseIgnoreJsonQueryMatch' )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.25
+  NAME 'scimRoles'
+  DESC 'SCIM Roles (JSON Objects, Multi-Valued)'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.30221.2.3.4
+  X-ORIGIN 'SCIM2 Schema'
+  X-JSON-QUERY-MATCHING-RULE 'caseIgnoreJsonQueryMatch' )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.26
+  NAME 'scimEntitlements'
+  DESC 'SCIM Entitlements (JSON Objects, Multi-Valued)'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.30221.2.3.4
+  X-ORIGIN 'SCIM2 Schema'
+  X-JSON-QUERY-MATCHING-RULE 'caseIgnoreJsonQueryMatch' )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.27
+  NAME 'scimX509Certificates'
+  DESC 'SCIM X.509 Certificates (JSON Objects, Multi-Valued)'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.30221.2.3.4
+  X-ORIGIN 'SCIM2 Schema'
+  X-JSON-QUERY-MATCHING-RULE 'caseIgnoreJsonQueryMatch' )
+#
+# ------------------------------------------------------------------------------
+# SCIM Enterprise User Extension Attributes
+# ------------------------------------------------------------------------------
+attributeTypes: ( 1.3.6.1.4.1.99999.1.30
+  NAME 'scimCostCenter'
+  DESC 'SCIM Enterprise User Cost Center'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.31
+  NAME 'scimOrganization'
+  DESC 'SCIM Enterprise User Organization'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.32
+  NAME 'scimDivision'
+  DESC 'SCIM Enterprise User Division'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE )
+#
+# ------------------------------------------------------------------------------
+# SCIM Metadata Attributes (Read-Only, Computed by Server)
+# ------------------------------------------------------------------------------
+attributeTypes: ( 1.3.6.1.4.1.99999.1.40
+  NAME 'scimResourceType'
+  DESC 'SCIM Resource Type (User, Group, etc.)'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE )
+#
+attributeTypes: ( 1.3.6.1.4.1.99999.1.41
+  NAME 'scimVersion'
+  DESC 'SCIM Resource Version (ETag)'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE )
+#
+# ------------------------------------------------------------------------------
+# SCIM Object Classes
+# ------------------------------------------------------------------------------
+objectClasses: ( 1.3.6.1.4.1.99999.2.1
+  NAME 'scimUser'
+  DESC 'SCIM User Resource Auxiliary Class'
+  SUP top
+  AUXILIARY
+  MAY ( scimExternalId $ scimActive $ scimMiddleName $
+        scimHonorificSuffix $ scimNickName $ scimLocale $ scimTimezone $
+        scimProfileUrl $ scimUserType $ scimEmails $ scimPhoneNumbers $
+        scimAddresses $ scimIms $ scimPhotos $ scimRoles $ scimEntitlements $
+        scimX509Certificates $ scimCostCenter $ scimOrganization $
+        scimDivision $ scimResourceType $ scimVersion ) )
+#
+objectClasses: ( 1.3.6.1.4.1.99999.2.2
+  NAME 'scimGroup'
+  DESC 'SCIM Group Resource Auxiliary Class'
+  SUP top
+  AUXILIARY
+  MAY ( scimExternalId $ scimResourceType $ scimVersion ) )
+
+# ==============================================================================
+# USAGE NOTES
+# ==============================================================================
+#
+# 1. SCIM ID MAPPING:
+#    - SCIM "id" property maps directly to LDAP "entryUUID" operational attribute
+#    - entryUUID is automatically assigned by the LDAP server on entry creation
+#    - When using Name-with-entryUUID control (OID 1.3.6.1.4.1.30221.2.5.44):
+#      * DNs are formatted as: entryUUID=<uuid>,<parent-dn>
+#      * Example: entryUUID=4058d13c-6a5c-4c27-aa71-9bd20048ddc5,ou=users,dc=example,dc=com
+#
+# 2. USER ENTRY EXAMPLE:
+#    dn: entryUUID=4058d13c-6a5c-4c27-aa71-9bd20048ddc5,ou=users,dc=example,dc=com
+#    objectClass: top
+#    objectClass: person
+#    objectClass: organizationalPerson
+#    objectClass: inetOrgPerson
+#    objectClass: scimUser
+#    entryUUID: 4058d13c-6a5c-4c27-aa71-9bd20048ddc5  (operational attribute, set by server)
+#    uid: dschrute
+#    cn: Dwight Schrute
+#    sn: Schrute
+#    givenName: Dwight
+#    scimMiddleName: Kurt
+#    mail: dschrute@example.com
+#    scimActive: TRUE
+#    scimEmails: {"value":"dschrute@example.com","type":"work","primary":true}
+#
+# 3. GROUP ENTRY EXAMPLE:
+#    dn: entryUUID=d31d9cc3-2f38-4249-9444-069898a08220,ou=groups,dc=example,dc=com
+#    objectClass: top
+#    objectClass: groupOfNames
+#    objectClass: scimGroup
+#    entryUUID: d31d9cc3-2f38-4249-9444-069898a08220  (operational attribute, set by server)
+#    cn: Sales Reps
+#    member: entryUUID=4058d13c-6a5c-4c27-aa71-9bd20048ddc5,ou=users,dc=example,dc=com
+#
+# 4. GROUP MEMBERSHIP QUERIES:
+#    - Group member attribute stores DNs (not just UUIDs)
+#    - SCIM filter "members.value eq <uuid>" is converted to LDAP filter "(member=entryUUID=<uuid>,...)"
+#    - isMemberOf virtual attribute (PingDirectory) provides reverse lookups
+#
+# 5. JSON ATTRIBUTE FILTERING:
+#    Filter emails where type=work:
+#    (scimEmails:jsonObjectFilterExtensibleMatch:={"filterType":"equals","field":"type","value":"work"})
+#
+# 4. SCHEMA MODIFICATIONS:
+#    Replace OID arc 1.3.6.1.4.1.99999 with your enterprise OID before production use
+#
+# ==============================================================================

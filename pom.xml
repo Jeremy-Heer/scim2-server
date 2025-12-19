@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.scim2.server</groupId>
 	<artifactId>scim2-server</artifactId>
-	<version>0.0.6-SNAPSHOT</version>
+	<version>0.0.7-SNAPSHOT</version>
 	<name>scim2-server</name>
 	<description>SCIM2 server project</description>
 	<url/>
@@ -90,6 +90,13 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+	
+		<!-- UnboundID LDAP SDK for LDAP backend -->
+		<dependency>
+			<groupId>com.unboundid</groupId>
+			<artifactId>unboundid-ldapsdk</artifactId>
+			<version>7.0.2</version>
 		</dependency>
 	</dependencies>
 

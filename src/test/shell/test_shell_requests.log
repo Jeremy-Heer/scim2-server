@@ -1,0 +1,1341 @@
+==== Fri Dec 19 03:57:56 PM EST 2025 ====
+START: test_adduser.sh
+==== Fri Dec 19 03:57:56 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Users
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "userName": "bjensen",
+  "name": {
+    "formatted": "Ms. Barbara J Jensen III",
+    "familyName": "Jensen",
+    "givenName": "Barbara"
+  },
+  "displayName": "Barbara Jensen",
+  "emails": [
+    {
+      "value": "bjensen@example.com",
+      "type": "work",
+      "primary": true
+    }
+  ],
+  "active": true
+}
+RESPONSE CODE: 201
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"4ca42757-fade-4768-af01-c435ef8a3382","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}
+END: test_adduser.sh
+==== Fri Dec 19 03:58:12 PM EST 2025 ====
+START: test_addgroup.sh
+==== Fri Dec 19 03:58:12 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Groups
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+  "displayName": "Test Group"
+}
+RESPONSE CODE: 201
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"22e2fdad-5fb3-4362-a35a-9ae99b2d57b7","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[]}
+END: test_addgroup.sh
+==== Fri Dec 19 03:58:23 PM EST 2025 ====
+START: test_getuser.sh
+==== Fri Dec 19 03:58:23 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 4ca42757-fade-4768-af01-c435ef8a3382
+REQUEST:
+GET http://localhost:9080/scim/v2/Users/4ca42757-fade-4768-af01-c435ef8a3382
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"4ca42757-fade-4768-af01-c435ef8a3382","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}
+END: test_getuser.sh
+==== Fri Dec 19 03:58:27 PM EST 2025 ====
+START: test_getgroup.sh
+==== Fri Dec 19 03:58:27 PM EST 2025 ====
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"22e2fdad-5fb3-4362-a35a-9ae99b2d57b7","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[]}]}
+REQUEST:
+GET http://localhost:9080/scim/v2/Groups/22e2fdad-5fb3-4362-a35a-9ae99b2d57b7
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"22e2fdad-5fb3-4362-a35a-9ae99b2d57b7","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[]}
+END: test_getgroup.sh
+==== Fri Dec 19 03:58:29 PM EST 2025 ====
+START: test_searchuser.sh
+==== Fri Dec 19 03:58:29 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Users/.search
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+  "filter": "userName eq \"bjensen\"",
+  "startIndex": 1,
+  "count": 10
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"4ca42757-fade-4768-af01-c435ef8a3382","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}]}
+END: test_searchuser.sh
+==== Fri Dec 19 03:58:29 PM EST 2025 ====
+START: test_searchgroup.sh
+==== Fri Dec 19 03:58:29 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Groups/.search
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+  "filter": "displayName eq \"Test Group\"",
+  "startIndex": 1,
+  "count": 10
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"22e2fdad-5fb3-4362-a35a-9ae99b2d57b7","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[]}]}
+END: test_searchgroup.sh
+==== Fri Dec 19 03:58:32 PM EST 2025 ====
+START: test_filteruser.sh
+==== Fri Dec 19 03:58:32 PM EST 2025 ====
+REQUEST:
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"4ca42757-fade-4768-af01-c435ef8a3382","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}]}
+END: test_filteruser.sh
+==== Fri Dec 19 03:58:33 PM EST 2025 ====
+START: test_filtergroup.sh
+==== Fri Dec 19 03:58:33 PM EST 2025 ====
+REQUEST:
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"22e2fdad-5fb3-4362-a35a-9ae99b2d57b7","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[]}]}
+END: test_filtergroup.sh
+==== Fri Dec 19 03:58:34 PM EST 2025 ====
+START: test_patchuser.sh
+==== Fri Dec 19 03:58:34 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 4ca42757-fade-4768-af01-c435ef8a3382
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Users/4ca42757-fade-4768-af01-c435ef8a3382
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "replace",
+      "path": "displayName",
+      "value": "Barbara J. Jensen"
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"4ca42757-fade-4768-af01-c435ef8a3382","meta":{"resourceType":"User","lastModified":1766177914342,"location":"http://localhost:9080/scim/v2/Users/4ca42757-fade-4768-af01-c435ef8a3382"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara J. Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}
+END: test_patchuser.sh
+==== Fri Dec 19 03:58:36 PM EST 2025 ====
+START: test_patchgroup.sh
+==== Fri Dec 19 03:58:36 PM EST 2025 ====
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: 22e2fdad-5fb3-4362-a35a-9ae99b2d57b7
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Groups/22e2fdad-5fb3-4362-a35a-9ae99b2d57b7
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "add",
+      "path": "members",
+      "value": [
+        {
+          "value": "902c246b-6245-4190-8e05-6c8a36bfe2a0",
+          "display": "John Smith"
+        }
+      ]
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"22e2fdad-5fb3-4362-a35a-9ae99b2d57b7","meta":{"resourceType":"Group","lastModified":1766177916496,"location":"http://localhost:9080/scim/v2/Groups/22e2fdad-5fb3-4362-a35a-9ae99b2d57b7"},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"}]}
+END: test_patchgroup.sh
+==== Fri Dec 19 03:58:37 PM EST 2025 ====
+START: test_addusertogroup.sh
+==== Fri Dec 19 03:58:37 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 4ca42757-fade-4768-af01-c435ef8a3382
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: 22e2fdad-5fb3-4362-a35a-9ae99b2d57b7
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Groups/22e2fdad-5fb3-4362-a35a-9ae99b2d57b7
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "add",
+      "path": "members",
+      "value": [
+        {
+          "value": "4ca42757-fade-4768-af01-c435ef8a3382",
+          "display": "Barbara Jensen"
+        }
+      ]
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"22e2fdad-5fb3-4362-a35a-9ae99b2d57b7","meta":{"resourceType":"Group","lastModified":1766177917937,"location":"http://localhost:9080/scim/v2/Groups/22e2fdad-5fb3-4362-a35a-9ae99b2d57b7"},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"4ca42757-fade-4768-af01-c435ef8a3382","type":"User"}]}
+END: test_addusertogroup.sh
+==== Fri Dec 19 04:04:46 PM EST 2025 ====
+START: test_checkgroupmembership_get.sh
+==== Fri Dec 19 04:04:46 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 4ca42757-fade-4768-af01-c435ef8a3382
+REQUEST:
+GET http://localhost:9080/scim/v2/Groups?filter=members.value%20eq%20%224ca42757-fade-4768-af01-c435ef8a3382%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"22e2fdad-5fb3-4362-a35a-9ae99b2d57b7","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"4ca42757-fade-4768-af01-c435ef8a3382","type":"User"}]}]}
+END: test_checkgroupmembership_get.sh
+==== Fri Dec 19 04:04:47 PM EST 2025 ====
+START: test_checkgroupmembership_post.sh
+==== Fri Dec 19 04:04:47 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 4ca42757-fade-4768-af01-c435ef8a3382
+REQUEST:
+POST http://localhost:9080/scim/v2/Groups/.search
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+  "filter": "members.value eq \"4ca42757-fade-4768-af01-c435ef8a3382\"",
+  "startIndex": 1,
+  "count": 10
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"22e2fdad-5fb3-4362-a35a-9ae99b2d57b7","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"4ca42757-fade-4768-af01-c435ef8a3382","type":"User"}]}]}
+END: test_checkgroupmembership_post.sh
+==== Fri Dec 19 04:04:47 PM EST 2025 ====
+START: test_removeuserfromgroup.sh
+==== Fri Dec 19 04:04:47 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20bjensen
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: 22e2fdad-5fb3-4362-a35a-9ae99b2d57b7
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Groups/22e2fdad-5fb3-4362-a35a-9ae99b2d57b7
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "remove",
+      "path": "members[value eq \"\"]"
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"22e2fdad-5fb3-4362-a35a-9ae99b2d57b7","meta":{"resourceType":"Group","lastModified":1766178287806,"location":"http://localhost:9080/scim/v2/Groups/22e2fdad-5fb3-4362-a35a-9ae99b2d57b7"},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"4ca42757-fade-4768-af01-c435ef8a3382","type":"User"}]}
+END: test_removeuserfromgroup.sh
+==== Fri Dec 19 04:04:48 PM EST 2025 ====
+START: test_deleteuser.sh
+==== Fri Dec 19 04:04:48 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 4ca42757-fade-4768-af01-c435ef8a3382
+REQUEST:
+DELETE http://localhost:9080/scim/v2/Users/4ca42757-fade-4768-af01-c435ef8a3382
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 204
+RESPONSE BODY:
+
+END: test_deleteuser.sh
+==== Fri Dec 19 04:04:48 PM EST 2025 ====
+START: test_deletegroup.sh
+==== Fri Dec 19 04:04:48 PM EST 2025 ====
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: 22e2fdad-5fb3-4362-a35a-9ae99b2d57b7
+REQUEST:
+DELETE http://localhost:9080/scim/v2/Groups/22e2fdad-5fb3-4362-a35a-9ae99b2d57b7
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 204
+RESPONSE BODY:
+
+END: test_deletegroup.sh
+==== Fri Dec 19 04:05:01 PM EST 2025 ====
+REQUEST (User Filter):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_IDS: 
+REQUEST (Group Filter):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_IDS: 
+==== Fri Dec 19 04:28:57 PM EST 2025 ====
+START: test_adduser.sh
+==== Fri Dec 19 04:28:58 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Users
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "userName": "bjensen",
+  "name": {
+    "formatted": "Ms. Barbara J Jensen III",
+    "familyName": "Jensen",
+    "givenName": "Barbara"
+  },
+  "displayName": "Barbara Jensen",
+  "emails": [
+    {
+      "value": "bjensen@example.com",
+      "type": "work",
+      "primary": true
+    }
+  ],
+  "active": true
+}
+RESPONSE CODE: 201
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"63236ec8-633c-4a59-850b-7e7e49a8249f","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}
+END: test_adduser.sh
+==== Fri Dec 19 04:29:19 PM EST 2025 ====
+START: test_addgroup.sh
+==== Fri Dec 19 04:29:19 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Groups
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+  "displayName": "Test Group"
+}
+RESPONSE CODE: 201
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[]}
+END: test_addgroup.sh
+==== Fri Dec 19 04:29:23 PM EST 2025 ====
+START: test_getuser.sh
+==== Fri Dec 19 04:29:23 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 63236ec8-633c-4a59-850b-7e7e49a8249f
+REQUEST:
+GET http://localhost:9080/scim/v2/Users/63236ec8-633c-4a59-850b-7e7e49a8249f
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"63236ec8-633c-4a59-850b-7e7e49a8249f","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}
+END: test_getuser.sh
+==== Fri Dec 19 04:29:24 PM EST 2025 ====
+START: test_getgroup.sh
+==== Fri Dec 19 04:29:24 PM EST 2025 ====
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[]}]}
+REQUEST:
+GET http://localhost:9080/scim/v2/Groups/db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[]}
+END: test_getgroup.sh
+==== Fri Dec 19 04:29:24 PM EST 2025 ====
+START: test_searchuser.sh
+==== Fri Dec 19 04:29:25 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Users/.search
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+  "filter": "userName eq \"bjensen\"",
+  "startIndex": 1,
+  "count": 10
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"63236ec8-633c-4a59-850b-7e7e49a8249f","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}]}
+END: test_searchuser.sh
+==== Fri Dec 19 04:29:25 PM EST 2025 ====
+START: test_searchgroup.sh
+==== Fri Dec 19 04:29:25 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Groups/.search
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+  "filter": "displayName eq \"Test Group\"",
+  "startIndex": 1,
+  "count": 10
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[]}]}
+END: test_searchgroup.sh
+==== Fri Dec 19 04:29:26 PM EST 2025 ====
+START: test_filteruser.sh
+==== Fri Dec 19 04:29:26 PM EST 2025 ====
+REQUEST:
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"63236ec8-633c-4a59-850b-7e7e49a8249f","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}]}
+END: test_filteruser.sh
+==== Fri Dec 19 04:29:27 PM EST 2025 ====
+START: test_filtergroup.sh
+==== Fri Dec 19 04:29:27 PM EST 2025 ====
+REQUEST:
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[]}]}
+END: test_filtergroup.sh
+==== Fri Dec 19 04:29:28 PM EST 2025 ====
+START: test_patchuser.sh
+==== Fri Dec 19 04:29:28 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 63236ec8-633c-4a59-850b-7e7e49a8249f
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Users/63236ec8-633c-4a59-850b-7e7e49a8249f
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "replace",
+      "path": "displayName",
+      "value": "Barbara J. Jensen"
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"63236ec8-633c-4a59-850b-7e7e49a8249f","meta":{"resourceType":"User","lastModified":1766179768641,"location":"http://localhost:9080/scim/v2/Users/63236ec8-633c-4a59-850b-7e7e49a8249f"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara J. Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}
+END: test_patchuser.sh
+==== Fri Dec 19 04:29:29 PM EST 2025 ====
+START: test_patchgroup.sh
+==== Fri Dec 19 04:29:30 PM EST 2025 ====
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Groups/db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "add",
+      "path": "members",
+      "value": [
+        {
+          "value": "902c246b-6245-4190-8e05-6c8a36bfe2a0",
+          "display": "John Smith"
+        }
+      ]
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02","meta":{"resourceType":"Group","lastModified":1766179770068,"location":"http://localhost:9080/scim/v2/Groups/db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02"},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"}]}
+END: test_patchgroup.sh
+==== Fri Dec 19 04:29:43 PM EST 2025 ====
+START: test_addusertogroup.sh
+==== Fri Dec 19 04:29:43 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 63236ec8-633c-4a59-850b-7e7e49a8249f
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Groups/db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "add",
+      "path": "members",
+      "value": [
+        {
+          "value": "63236ec8-633c-4a59-850b-7e7e49a8249f",
+          "display": "Barbara Jensen"
+        }
+      ]
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02","meta":{"resourceType":"Group","lastModified":1766179783841,"location":"http://localhost:9080/scim/v2/Groups/db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02"},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"63236ec8-633c-4a59-850b-7e7e49a8249f","type":"User"}]}
+END: test_addusertogroup.sh
+==== Fri Dec 19 04:32:49 PM EST 2025 ====
+START: test_checkgroupmembership_get.sh
+==== Fri Dec 19 04:32:49 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 63236ec8-633c-4a59-850b-7e7e49a8249f
+REQUEST:
+GET http://localhost:9080/scim/v2/Groups?filter=members.value%20eq%20%2263236ec8-633c-4a59-850b-7e7e49a8249f%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"63236ec8-633c-4a59-850b-7e7e49a8249f","type":"User"}]}]}
+END: test_checkgroupmembership_get.sh
+==== Fri Dec 19 04:32:49 PM EST 2025 ====
+START: test_checkgroupmembership_post.sh
+==== Fri Dec 19 04:32:49 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 63236ec8-633c-4a59-850b-7e7e49a8249f
+REQUEST:
+POST http://localhost:9080/scim/v2/Groups/.search
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+  "filter": "members.value eq \"63236ec8-633c-4a59-850b-7e7e49a8249f\"",
+  "startIndex": 1,
+  "count": 10
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"63236ec8-633c-4a59-850b-7e7e49a8249f","type":"User"}]}]}
+END: test_checkgroupmembership_post.sh
+==== Fri Dec 19 04:32:50 PM EST 2025 ====
+START: test_removeuserfromgroup.sh
+==== Fri Dec 19 04:32:50 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20bjensen
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Groups/db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "remove",
+      "path": "members[value eq \"\"]"
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02","meta":{"resourceType":"Group","lastModified":1766179970427,"location":"http://localhost:9080/scim/v2/Groups/db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02"},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"63236ec8-633c-4a59-850b-7e7e49a8249f","type":"User"}]}
+END: test_removeuserfromgroup.sh
+==== Fri Dec 19 04:32:50 PM EST 2025 ====
+START: test_deleteuser.sh
+==== Fri Dec 19 04:32:51 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 63236ec8-633c-4a59-850b-7e7e49a8249f
+REQUEST:
+DELETE http://localhost:9080/scim/v2/Users/63236ec8-633c-4a59-850b-7e7e49a8249f
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 204
+RESPONSE BODY:
+
+END: test_deleteuser.sh
+==== Fri Dec 19 04:32:51 PM EST 2025 ====
+START: test_deletegroup.sh
+==== Fri Dec 19 04:32:51 PM EST 2025 ====
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02
+REQUEST:
+DELETE http://localhost:9080/scim/v2/Groups/db6bf5d5-e5d5-4b0a-b464-d7fc5c311d02
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 204
+RESPONSE BODY:
+
+END: test_deletegroup.sh
+==== Fri Dec 19 04:32:54 PM EST 2025 ====
+REQUEST (User Filter):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_IDS: 
+REQUEST (Group Filter):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_IDS: 
+==== Fri Dec 19 04:36:59 PM EST 2025 ====
+START: test_adduser.sh
+==== Fri Dec 19 04:36:59 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Users
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "userName": "bjensen",
+  "name": {
+    "formatted": "Ms. Barbara J Jensen III",
+    "familyName": "Jensen",
+    "givenName": "Barbara"
+  },
+  "displayName": "Barbara Jensen",
+  "emails": [
+    {
+      "value": "bjensen@example.com",
+      "type": "work",
+      "primary": true
+    }
+  ],
+  "active": true
+}
+RESPONSE CODE: 201
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"7f16acdf-d9a5-431c-89b4-b3a45310e21d","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}
+END: test_adduser.sh
+==== Fri Dec 19 04:37:03 PM EST 2025 ====
+START: test_addgroup.sh
+==== Fri Dec 19 04:37:03 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Groups
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+  "displayName": "Test Group"
+}
+RESPONSE CODE: 201
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"da5332fd-3ff7-451b-8146-6727dd7c32f9","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[]}
+END: test_addgroup.sh
+==== Fri Dec 19 04:37:04 PM EST 2025 ====
+START: test_getuser.sh
+==== Fri Dec 19 04:37:04 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 7f16acdf-d9a5-431c-89b4-b3a45310e21d
+REQUEST:
+GET http://localhost:9080/scim/v2/Users/7f16acdf-d9a5-431c-89b4-b3a45310e21d
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"7f16acdf-d9a5-431c-89b4-b3a45310e21d","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}
+END: test_getuser.sh
+==== Fri Dec 19 04:37:05 PM EST 2025 ====
+START: test_getgroup.sh
+==== Fri Dec 19 04:37:05 PM EST 2025 ====
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"da5332fd-3ff7-451b-8146-6727dd7c32f9","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[]}]}
+REQUEST:
+GET http://localhost:9080/scim/v2/Groups/da5332fd-3ff7-451b-8146-6727dd7c32f9
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"da5332fd-3ff7-451b-8146-6727dd7c32f9","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[]}
+END: test_getgroup.sh
+==== Fri Dec 19 04:37:06 PM EST 2025 ====
+START: test_searchuser.sh
+==== Fri Dec 19 04:37:06 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Users/.search
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+  "filter": "userName eq \"bjensen\"",
+  "startIndex": 1,
+  "count": 10
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"7f16acdf-d9a5-431c-89b4-b3a45310e21d","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}]}
+END: test_searchuser.sh
+==== Fri Dec 19 04:37:08 PM EST 2025 ====
+START: test_searchgroup.sh
+==== Fri Dec 19 04:37:08 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Groups/.search
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+  "filter": "displayName eq \"Test Group\"",
+  "startIndex": 1,
+  "count": 10
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"da5332fd-3ff7-451b-8146-6727dd7c32f9","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[]}]}
+END: test_searchgroup.sh
+==== Fri Dec 19 04:37:09 PM EST 2025 ====
+START: test_filteruser.sh
+==== Fri Dec 19 04:37:10 PM EST 2025 ====
+REQUEST:
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"7f16acdf-d9a5-431c-89b4-b3a45310e21d","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}]}
+END: test_filteruser.sh
+==== Fri Dec 19 04:37:11 PM EST 2025 ====
+START: test_filtergroup.sh
+==== Fri Dec 19 04:37:11 PM EST 2025 ====
+REQUEST:
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"da5332fd-3ff7-451b-8146-6727dd7c32f9","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[]}]}
+END: test_filtergroup.sh
+==== Fri Dec 19 04:37:18 PM EST 2025 ====
+START: test_patchuser.sh
+==== Fri Dec 19 04:37:18 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 7f16acdf-d9a5-431c-89b4-b3a45310e21d
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Users/7f16acdf-d9a5-431c-89b4-b3a45310e21d
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "replace",
+      "path": "displayName",
+      "value": "Barbara J. Jensen"
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"7f16acdf-d9a5-431c-89b4-b3a45310e21d","meta":{"resourceType":"User","lastModified":1766180238982,"location":"http://localhost:9080/scim/v2/Users/7f16acdf-d9a5-431c-89b4-b3a45310e21d"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara J. Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}
+END: test_patchuser.sh
+==== Fri Dec 19 04:37:24 PM EST 2025 ====
+START: test_patchgroup.sh
+==== Fri Dec 19 04:37:24 PM EST 2025 ====
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: da5332fd-3ff7-451b-8146-6727dd7c32f9
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Groups/da5332fd-3ff7-451b-8146-6727dd7c32f9
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "add",
+      "path": "members",
+      "value": [
+        {
+          "value": "902c246b-6245-4190-8e05-6c8a36bfe2a0",
+          "display": "John Smith"
+        }
+      ]
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"da5332fd-3ff7-451b-8146-6727dd7c32f9","meta":{"resourceType":"Group","lastModified":1766180244596,"location":"http://localhost:9080/scim/v2/Groups/da5332fd-3ff7-451b-8146-6727dd7c32f9","version":"W/\"1766180244596\""},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"}]}
+END: test_patchgroup.sh
+==== Fri Dec 19 04:37:31 PM EST 2025 ====
+START: test_addusertogroup.sh
+==== Fri Dec 19 04:37:31 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 7f16acdf-d9a5-431c-89b4-b3a45310e21d
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: da5332fd-3ff7-451b-8146-6727dd7c32f9
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Groups/da5332fd-3ff7-451b-8146-6727dd7c32f9
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "add",
+      "path": "members",
+      "value": [
+        {
+          "value": "7f16acdf-d9a5-431c-89b4-b3a45310e21d",
+          "display": "Barbara Jensen"
+        }
+      ]
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"da5332fd-3ff7-451b-8146-6727dd7c32f9","meta":{"resourceType":"Group","lastModified":1766180251986,"location":"http://localhost:9080/scim/v2/Groups/da5332fd-3ff7-451b-8146-6727dd7c32f9","version":"W/\"1766180251986\""},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"7f16acdf-d9a5-431c-89b4-b3a45310e21d","type":"User"}]}
+END: test_addusertogroup.sh
+==== Fri Dec 19 04:44:25 PM EST 2025 ====
+START: test_checkgroupmembership_get.sh
+==== Fri Dec 19 04:44:25 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 7f16acdf-d9a5-431c-89b4-b3a45310e21d
+REQUEST:
+GET http://localhost:9080/scim/v2/Groups?filter=members.value%20eq%20%227f16acdf-d9a5-431c-89b4-b3a45310e21d%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"da5332fd-3ff7-451b-8146-6727dd7c32f9","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"7f16acdf-d9a5-431c-89b4-b3a45310e21d","type":"User"}]}]}
+END: test_checkgroupmembership_get.sh
+==== Fri Dec 19 04:44:29 PM EST 2025 ====
+START: test_checkgroupmembership_post.sh
+==== Fri Dec 19 04:44:29 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 7f16acdf-d9a5-431c-89b4-b3a45310e21d
+REQUEST:
+POST http://localhost:9080/scim/v2/Groups/.search
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+  "filter": "members.value eq \"7f16acdf-d9a5-431c-89b4-b3a45310e21d\"",
+  "startIndex": 1,
+  "count": 10
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"da5332fd-3ff7-451b-8146-6727dd7c32f9","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"7f16acdf-d9a5-431c-89b4-b3a45310e21d","type":"User"}]}]}
+END: test_checkgroupmembership_post.sh
+==== Fri Dec 19 04:44:30 PM EST 2025 ====
+START: test_removeuserfromgroup.sh
+==== Fri Dec 19 04:44:30 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20bjensen
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: da5332fd-3ff7-451b-8146-6727dd7c32f9
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Groups/da5332fd-3ff7-451b-8146-6727dd7c32f9
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "remove",
+      "path": "members[value eq \"\"]"
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"da5332fd-3ff7-451b-8146-6727dd7c32f9","meta":{"resourceType":"Group","lastModified":1766180670621,"location":"http://localhost:9080/scim/v2/Groups/da5332fd-3ff7-451b-8146-6727dd7c32f9","version":"W/\"1766180670621\""},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"7f16acdf-d9a5-431c-89b4-b3a45310e21d","type":"User"}]}
+END: test_removeuserfromgroup.sh
+==== Fri Dec 19 04:44:31 PM EST 2025 ====
+START: test_deleteuser.sh
+==== Fri Dec 19 04:44:31 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 7f16acdf-d9a5-431c-89b4-b3a45310e21d
+REQUEST:
+DELETE http://localhost:9080/scim/v2/Users/7f16acdf-d9a5-431c-89b4-b3a45310e21d
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 204
+RESPONSE BODY:
+
+END: test_deleteuser.sh
+==== Fri Dec 19 04:44:31 PM EST 2025 ====
+START: test_deletegroup.sh
+==== Fri Dec 19 04:44:31 PM EST 2025 ====
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: da5332fd-3ff7-451b-8146-6727dd7c32f9
+REQUEST:
+DELETE http://localhost:9080/scim/v2/Groups/da5332fd-3ff7-451b-8146-6727dd7c32f9
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 204
+RESPONSE BODY:
+
+END: test_deletegroup.sh
+==== Fri Dec 19 04:44:35 PM EST 2025 ====
+REQUEST (User Filter):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_IDS: 
+REQUEST (Group Filter):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_IDS: 
+==== Fri Dec 19 04:44:51 PM EST 2025 ====
+START: test_adduser.sh
+==== Fri Dec 19 04:44:51 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Users
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "userName": "bjensen",
+  "name": {
+    "formatted": "Ms. Barbara J Jensen III",
+    "familyName": "Jensen",
+    "givenName": "Barbara"
+  },
+  "displayName": "Barbara Jensen",
+  "emails": [
+    {
+      "value": "bjensen@example.com",
+      "type": "work",
+      "primary": true
+    }
+  ],
+  "active": true
+}
+RESPONSE CODE: 201
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"8180a729-617d-4ff2-a9ea-ffcd387bd46c","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}
+END: test_adduser.sh
+==== Fri Dec 19 04:45:11 PM EST 2025 ====
+START: test_addgroup.sh
+==== Fri Dec 19 04:45:11 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Groups
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+  "displayName": "Test Group"
+}
+RESPONSE CODE: 201
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"b03aafce-8e77-43cf-98a6-e2037f90c27f","meta":{"resourceType":"Group"},"displayName":"Test Group"}
+END: test_addgroup.sh
+==== Fri Dec 19 04:45:20 PM EST 2025 ====
+START: test_getuser.sh
+==== Fri Dec 19 04:45:20 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 8180a729-617d-4ff2-a9ea-ffcd387bd46c
+REQUEST:
+GET http://localhost:9080/scim/v2/Users/8180a729-617d-4ff2-a9ea-ffcd387bd46c
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"8180a729-617d-4ff2-a9ea-ffcd387bd46c","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}
+END: test_getuser.sh
+==== Fri Dec 19 04:45:23 PM EST 2025 ====
+START: test_getgroup.sh
+==== Fri Dec 19 04:45:23 PM EST 2025 ====
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"b03aafce-8e77-43cf-98a6-e2037f90c27f","meta":{"resourceType":"Group"},"displayName":"Test Group"}]}
+REQUEST:
+GET http://localhost:9080/scim/v2/Groups/b03aafce-8e77-43cf-98a6-e2037f90c27f
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"b03aafce-8e77-43cf-98a6-e2037f90c27f","meta":{"resourceType":"Group"},"displayName":"Test Group"}
+END: test_getgroup.sh
+==== Fri Dec 19 04:45:25 PM EST 2025 ====
+START: test_searchuser.sh
+==== Fri Dec 19 04:45:25 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Users/.search
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+  "filter": "userName eq \"bjensen\"",
+  "startIndex": 1,
+  "count": 10
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"8180a729-617d-4ff2-a9ea-ffcd387bd46c","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}]}
+END: test_searchuser.sh
+==== Fri Dec 19 04:45:26 PM EST 2025 ====
+START: test_searchgroup.sh
+==== Fri Dec 19 04:45:26 PM EST 2025 ====
+REQUEST:
+POST http://localhost:9080/scim/v2/Groups/.search
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+  "filter": "displayName eq \"Test Group\"",
+  "startIndex": 1,
+  "count": 10
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"b03aafce-8e77-43cf-98a6-e2037f90c27f","meta":{"resourceType":"Group"},"displayName":"Test Group"}]}
+END: test_searchgroup.sh
+==== Fri Dec 19 04:45:28 PM EST 2025 ====
+START: test_filteruser.sh
+==== Fri Dec 19 04:45:28 PM EST 2025 ====
+REQUEST:
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"8180a729-617d-4ff2-a9ea-ffcd387bd46c","meta":{"resourceType":"User"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}]}
+END: test_filteruser.sh
+==== Fri Dec 19 04:45:29 PM EST 2025 ====
+START: test_filtergroup.sh
+==== Fri Dec 19 04:45:29 PM EST 2025 ====
+REQUEST:
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"b03aafce-8e77-43cf-98a6-e2037f90c27f","meta":{"resourceType":"Group"},"displayName":"Test Group"}]}
+END: test_filtergroup.sh
+==== Fri Dec 19 04:45:30 PM EST 2025 ====
+START: test_patchuser.sh
+==== Fri Dec 19 04:45:30 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 8180a729-617d-4ff2-a9ea-ffcd387bd46c
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Users/8180a729-617d-4ff2-a9ea-ffcd387bd46c
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "replace",
+      "path": "displayName",
+      "value": "Barbara J. Jensen"
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],"id":"8180a729-617d-4ff2-a9ea-ffcd387bd46c","meta":{"resourceType":"User","lastModified":1766180730816,"location":"http://localhost:9080/scim/v2/Users/8180a729-617d-4ff2-a9ea-ffcd387bd46c"},"userName":"bjensen","name":{"formatted":"Barbara Jensen","familyName":"Jensen","givenName":"Barbara"},"displayName":"Barbara J. Jensen","active":true,"emails":[{"value":"bjensen@example.com","type":"work","primary":true}]}
+END: test_patchuser.sh
+==== Fri Dec 19 04:47:47 PM EST 2025 ====
+START: test_patchgroup.sh
+==== Fri Dec 19 04:47:47 PM EST 2025 ====
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: b03aafce-8e77-43cf-98a6-e2037f90c27f
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Groups/b03aafce-8e77-43cf-98a6-e2037f90c27f
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "add",
+      "path": "members",
+      "value": [
+        {
+          "value": "902c246b-6245-4190-8e05-6c8a36bfe2a0",
+          "display": "John Smith"
+        }
+      ]
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"b03aafce-8e77-43cf-98a6-e2037f90c27f","meta":{"resourceType":"Group","lastModified":1766180867881,"location":"http://localhost:9080/scim/v2/Groups/b03aafce-8e77-43cf-98a6-e2037f90c27f","version":"W/\"1766180867881\""},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"}]}
+END: test_patchgroup.sh
+==== Fri Dec 19 04:47:58 PM EST 2025 ====
+START: test_addusertogroup.sh
+==== Fri Dec 19 04:47:59 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 8180a729-617d-4ff2-a9ea-ffcd387bd46c
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: b03aafce-8e77-43cf-98a6-e2037f90c27f
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Groups/b03aafce-8e77-43cf-98a6-e2037f90c27f
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "add",
+      "path": "members",
+      "value": [
+        {
+          "value": "8180a729-617d-4ff2-a9ea-ffcd387bd46c",
+          "display": "Barbara Jensen"
+        }
+      ]
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"b03aafce-8e77-43cf-98a6-e2037f90c27f","meta":{"resourceType":"Group","lastModified":1766180879088,"location":"http://localhost:9080/scim/v2/Groups/b03aafce-8e77-43cf-98a6-e2037f90c27f","version":"W/\"1766180879088\""},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"8180a729-617d-4ff2-a9ea-ffcd387bd46c","type":"User"}]}
+END: test_addusertogroup.sh
+==== Fri Dec 19 04:48:09 PM EST 2025 ====
+START: test_checkgroupmembership_get.sh
+==== Fri Dec 19 04:48:09 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 8180a729-617d-4ff2-a9ea-ffcd387bd46c
+REQUEST:
+GET http://localhost:9080/scim/v2/Groups?filter=members.value%20eq%20%228180a729-617d-4ff2-a9ea-ffcd387bd46c%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"b03aafce-8e77-43cf-98a6-e2037f90c27f","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"8180a729-617d-4ff2-a9ea-ffcd387bd46c","type":"User"}]}]}
+END: test_checkgroupmembership_get.sh
+==== Fri Dec 19 04:48:14 PM EST 2025 ====
+START: test_checkgroupmembership_post.sh
+==== Fri Dec 19 04:48:14 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 8180a729-617d-4ff2-a9ea-ffcd387bd46c
+REQUEST:
+POST http://localhost:9080/scim/v2/Groups/.search
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+  "filter": "members.value eq \"8180a729-617d-4ff2-a9ea-ffcd387bd46c\"",
+  "startIndex": 1,
+  "count": 10
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:api:messages:2.0:ListResponse"],"totalResults":1,"startIndex":1,"itemsPerPage":1,"Resources":[{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"b03aafce-8e77-43cf-98a6-e2037f90c27f","meta":{"resourceType":"Group"},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"8180a729-617d-4ff2-a9ea-ffcd387bd46c","type":"User"}]}]}
+END: test_checkgroupmembership_post.sh
+==== Fri Dec 19 04:48:15 PM EST 2025 ====
+START: test_removeuserfromgroup.sh
+==== Fri Dec 19 04:48:15 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20bjensen
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: b03aafce-8e77-43cf-98a6-e2037f90c27f
+REQUEST:
+PATCH http://localhost:9080/scim/v2/Groups/b03aafce-8e77-43cf-98a6-e2037f90c27f
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+Body: {
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {
+      "op": "remove",
+      "path": "members[value eq \"\"]"
+    }
+  ]
+}
+RESPONSE CODE: 200
+RESPONSE BODY:
+{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"id":"b03aafce-8e77-43cf-98a6-e2037f90c27f","meta":{"resourceType":"Group","lastModified":1766180895713,"location":"http://localhost:9080/scim/v2/Groups/b03aafce-8e77-43cf-98a6-e2037f90c27f","version":"W/\"1766180895713\""},"displayName":"Test Group","members":[{"value":"902c246b-6245-4190-8e05-6c8a36bfe2a0","type":"User"},{"value":"8180a729-617d-4ff2-a9ea-ffcd387bd46c","type":"User"}]}
+END: test_removeuserfromgroup.sh
+==== Fri Dec 19 04:49:11 PM EST 2025 ====
+START: test_deleteuser.sh
+==== Fri Dec 19 04:49:11 PM EST 2025 ====
+REQUEST (User ID fetch):
+GET http://localhost:9080/scim/v2/Users?filter=userName%20eq%20%22bjensen%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+USER_ID: 8180a729-617d-4ff2-a9ea-ffcd387bd46c
+REQUEST:
+DELETE http://localhost:9080/scim/v2/Users/8180a729-617d-4ff2-a9ea-ffcd387bd46c
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 204
+RESPONSE BODY:
+
+END: test_deleteuser.sh
+==== Fri Dec 19 04:49:13 PM EST 2025 ====
+START: test_deletegroup.sh
+==== Fri Dec 19 04:49:13 PM EST 2025 ====
+REQUEST (Group ID fetch):
+GET http://localhost:9080/scim/v2/Groups?filter=displayName%20eq%20%22Test%20Group%22
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+GROUP_ID: b03aafce-8e77-43cf-98a6-e2037f90c27f
+REQUEST:
+DELETE http://localhost:9080/scim/v2/Groups/b03aafce-8e77-43cf-98a6-e2037f90c27f
+Authorization: Bearer scim-token-123
+Content-Type: application/scim+json
+RESPONSE CODE: 204
+RESPONSE BODY:
+
+END: test_deletegroup.sh

@@ -1,6 +1,6 @@
 package com.scim2.server.scim2_server.controller;
 
-import com.scim2.server.scim2_server.service.JsonFileService;
+import com.scim2.server.scim2_server.repository.ScimRepository;
 import com.scim2.server.scim2_server.security.ScimAuthenticationFilter;
 import com.scim2.server.scim2_server.security.SecurityConfig;
 import com.unboundid.scim2.common.types.UserResource;
@@ -36,7 +36,7 @@ public class UsersControllerTest {
     private MockMvc mockMvc;
     
     @MockBean
-    private JsonFileService jsonFileService;
+    private ScimRepository scimRepository;
     
     private UserResource testUser;
     
@@ -64,9 +64,9 @@ public class UsersControllerTest {
     @Test
     @WithMockUser
     void testGetUsers_Success() throws Exception {
-        when(jsonFileService.searchUsers(any(), any(), any(), any(), any(), any(), any()))
-            .thenReturn(Arrays.asList(testUser));
-        when(jsonFileService.getTotalUsers(anyString()))
+        when(scimRepository.searchUsers(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(Arrays.asList(testUser));
+        when(scimRepository.getTotalUsers(anyString()))
             .thenReturn(1);
         
         mockMvc.perform(get("/scim/v2/Users")
@@ -85,8 +85,8 @@ public class UsersControllerTest {
         patchedUser.setDisplayName("Updated Display Name");
         patchedUser.setActive(false);
         
-        when(jsonFileService.getUserById(userId)).thenReturn(testUser);
-        when(jsonFileService.patchUser(eq(userId), any(PatchRequest.class))).thenReturn(patchedUser);
+        when(scimRepository.getUserById(userId)).thenReturn(testUser);
+        when(scimRepository.patchUser(eq(userId), any(PatchRequest.class))).thenReturn(patchedUser);
         
         String patchBody = """
             {
@@ -115,8 +115,8 @@ public class UsersControllerTest {
                 .andExpect(jsonPath("$.displayName").value("Updated Display Name"))
                 .andExpect(jsonPath("$.active").value(false));
         
-        verify(jsonFileService).getUserById(userId);
-        verify(jsonFileService).patchUser(eq(userId), any(PatchRequest.class));
+        verify(scimRepository).getUserById(userId);
+        verify(scimRepository).patchUser(eq(userId), any(PatchRequest.class));
     }
     
     @Test
@@ -124,7 +124,7 @@ public class UsersControllerTest {
     void testPatchUser_NotFound() throws Exception {
         String userId = "nonexistent-id";
         
-        when(jsonFileService.getUserById(userId)).thenReturn(null);
+        when(scimRepository.getUserById(userId)).thenReturn(null);
         
         String patchBody = """
             {
@@ -145,7 +145,7 @@ public class UsersControllerTest {
                 .content(patchBody))
                 .andExpect(status().isNotFound());
         
-        verify(jsonFileService).getUserById(userId);
-        verify(jsonFileService, never()).patchUser(any(), any());
+        verify(scimRepository).getUserById(userId);
+        verify(scimRepository, never()).patchUser(any(), any());
     }
 }

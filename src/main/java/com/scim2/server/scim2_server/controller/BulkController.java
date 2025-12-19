@@ -5,7 +5,7 @@ import com.scim2.server.scim2_server.exception.InvalidRequestException;
 import com.scim2.server.scim2_server.model.BulkOperation;
 import com.scim2.server.scim2_server.model.BulkRequest;
 import com.scim2.server.scim2_server.model.BulkResponse;
-import com.scim2.server.scim2_server.service.JsonFileService;
+import com.scim2.server.scim2_server.repository.ScimRepository;
 import com.unboundid.scim2.common.types.GroupResource;
 import com.unboundid.scim2.common.types.UserResource;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,11 +29,11 @@ import java.util.regex.Pattern;
 @SecurityRequirement(name = "bearerAuth")
 public class BulkController {
     
-    private final JsonFileService jsonFileService;
+    private final ScimRepository scimRepository;
     private final ObjectMapper objectMapper;
     
-    public BulkController(JsonFileService jsonFileService, ObjectMapper objectMapper) {
-        this.jsonFileService = jsonFileService;
+    public BulkController(ScimRepository scimRepository, ObjectMapper objectMapper) {
+        this.scimRepository = scimRepository;
         this.objectMapper = objectMapper;
     }
     
@@ -110,13 +110,13 @@ public class BulkController {
     private void handlePost(String path, Object data, BulkOperation responseOp, HttpServletRequest request) throws Exception {
         if (path.equals("/Users")) {
             UserResource user = objectMapper.convertValue(data, UserResource.class);
-            UserResource savedUser = jsonFileService.saveUser(user);
+            UserResource savedUser = scimRepository.saveUser(user);
             responseOp.setStatus("201");
             responseOp.setLocation("/scim/v2/Users/" + savedUser.getId());
             responseOp.setResponse(savedUser);
         } else if (path.equals("/Groups")) {
             GroupResource group = objectMapper.convertValue(data, GroupResource.class);
-            GroupResource savedGroup = jsonFileService.saveGroup(group);
+            GroupResource savedGroup = scimRepository.saveGroup(group);
             responseOp.setStatus("201");
             responseOp.setLocation("/scim/v2/Groups/" + savedGroup.getId());
             responseOp.setResponse(savedGroup);
@@ -135,14 +135,14 @@ public class BulkController {
         if (userMatcher.matches()) {
             String userId = userMatcher.group(1);
             UserResource user = objectMapper.convertValue(data, UserResource.class);
-            UserResource updatedUser = jsonFileService.updateUser(userId, user);
+            UserResource updatedUser = scimRepository.updateUser(userId, user);
             responseOp.setStatus("200");
             responseOp.setLocation("/scim/v2/Users/" + userId);
             responseOp.setResponse(updatedUser);
         } else if (groupMatcher.matches()) {
             String groupId = groupMatcher.group(1);
             GroupResource group = objectMapper.convertValue(data, GroupResource.class);
-            GroupResource updatedGroup = jsonFileService.updateGroup(groupId, group);
+            GroupResource updatedGroup = scimRepository.updateGroup(groupId, group);
             responseOp.setStatus("200");
             responseOp.setLocation("/scim/v2/Groups/" + groupId);
             responseOp.setResponse(updatedGroup);
@@ -166,7 +166,7 @@ public class BulkController {
         
         if (userMatcher.matches()) {
             String userId = userMatcher.group(1);
-            if (jsonFileService.deleteUser(userId)) {
+            if (scimRepository.deleteUser(userId)) {
                 responseOp.setStatus("204");
             } else {
                 responseOp.setStatus("404");
@@ -174,7 +174,7 @@ public class BulkController {
             }
         } else if (groupMatcher.matches()) {
             String groupId = groupMatcher.group(1);
-            if (jsonFileService.deleteGroup(groupId)) {
+            if (scimRepository.deleteGroup(groupId)) {
                 responseOp.setStatus("204");
             } else {
                 responseOp.setStatus("404");

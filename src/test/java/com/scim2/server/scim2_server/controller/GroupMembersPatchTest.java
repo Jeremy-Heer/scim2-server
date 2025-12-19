@@ -1,6 +1,6 @@
 package com.scim2.server.scim2_server.controller;
 
-import com.scim2.server.scim2_server.service.JsonFileService;
+import com.scim2.server.scim2_server.repository.ScimRepository;
 import com.scim2.server.scim2_server.security.ScimAuthenticationFilter;
 import com.scim2.server.scim2_server.security.SecurityConfig;
 import com.unboundid.scim2.common.types.GroupResource;
@@ -35,7 +35,7 @@ public class GroupMembersPatchTest {
     private MockMvc mockMvc;
     
     @MockBean
-    private JsonFileService jsonFileService;
+    private ScimRepository scimRepository;
     
     private UserResource testUser1;
     private UserResource testUser2;
@@ -76,8 +76,8 @@ public class GroupMembersPatchTest {
         member.setDisplay("User One");
         updatedGroup.setMembers(Arrays.asList(member));
         
-        when(jsonFileService.getGroupById(groupId)).thenReturn(testGroup);
-        when(jsonFileService.patchGroup(eq(groupId), any(PatchRequest.class))).thenReturn(updatedGroup);
+        when(scimRepository.getGroupById(groupId)).thenReturn(testGroup);
+        when(scimRepository.patchGroup(eq(groupId), any(PatchRequest.class))).thenReturn(updatedGroup);
         
         String patchBody = """
             {
@@ -108,8 +108,8 @@ public class GroupMembersPatchTest {
                 .andExpect(jsonPath("$.members[0].value").value("user-1"))
                 .andExpect(jsonPath("$.members[0].display").value("User One"));
         
-        verify(jsonFileService).getGroupById(groupId);
-        verify(jsonFileService).patchGroup(eq(groupId), any(PatchRequest.class));
+        verify(scimRepository).getGroupById(groupId);
+        verify(scimRepository).patchGroup(eq(groupId), any(PatchRequest.class));
     }
     
     @Test
@@ -132,8 +132,8 @@ public class GroupMembersPatchTest {
         
         updatedGroup.setMembers(Arrays.asList(member1, member2));
         
-        when(jsonFileService.getGroupById(groupId)).thenReturn(testGroup);
-        when(jsonFileService.patchGroup(eq(groupId), any(PatchRequest.class))).thenReturn(updatedGroup);
+        when(scimRepository.getGroupById(groupId)).thenReturn(testGroup);
+        when(scimRepository.patchGroup(eq(groupId), any(PatchRequest.class))).thenReturn(updatedGroup);
         
         String patchBody = """
             {
@@ -168,8 +168,8 @@ public class GroupMembersPatchTest {
                 .andExpect(jsonPath("$.members[0].value").value("user-1"))
                 .andExpect(jsonPath("$.members[1].value").value("user-2"));
         
-        verify(jsonFileService).getGroupById(groupId);
-        verify(jsonFileService).patchGroup(eq(groupId), any(PatchRequest.class));
+        verify(scimRepository).getGroupById(groupId);
+        verify(scimRepository).patchGroup(eq(groupId), any(PatchRequest.class));
     }
     
     @Test
@@ -194,8 +194,8 @@ public class GroupMembersPatchTest {
         
         updatedGroup.setMembers(Arrays.asList(existingMember, newMember));
         
-        when(jsonFileService.getGroupById(groupId)).thenReturn(testGroup);
-        when(jsonFileService.patchGroup(eq(groupId), any(PatchRequest.class))).thenReturn(updatedGroup);
+        when(scimRepository.getGroupById(groupId)).thenReturn(testGroup);
+        when(scimRepository.patchGroup(eq(groupId), any(PatchRequest.class))).thenReturn(updatedGroup);
         
         String patchBody = """
             {
@@ -224,8 +224,8 @@ public class GroupMembersPatchTest {
                 .andExpect(jsonPath("$.members").isArray())
                 .andExpect(jsonPath("$.members", hasSize(2)));
         
-        verify(jsonFileService).getGroupById(groupId);
-        verify(jsonFileService).patchGroup(eq(groupId), any(PatchRequest.class));
+        verify(scimRepository).getGroupById(groupId);
+        verify(scimRepository).patchGroup(eq(groupId), any(PatchRequest.class));
     }
     
     @Test
@@ -251,8 +251,8 @@ public class GroupMembersPatchTest {
         updatedGroup.setDisplayName("Test Group");
         updatedGroup.setMembers(Arrays.asList(member2));
         
-        when(jsonFileService.getGroupById(groupId)).thenReturn(testGroup);
-        when(jsonFileService.patchGroup(eq(groupId), any(PatchRequest.class))).thenReturn(updatedGroup);
+        when(scimRepository.getGroupById(groupId)).thenReturn(testGroup);
+        when(scimRepository.patchGroup(eq(groupId), any(PatchRequest.class))).thenReturn(updatedGroup);
         
         String patchBody = """
             {
@@ -277,8 +277,8 @@ public class GroupMembersPatchTest {
                 .andExpect(jsonPath("$.members", hasSize(1)))
                 .andExpect(jsonPath("$.members[0].value").value("user-2"));
         
-        verify(jsonFileService).getGroupById(groupId);
-        verify(jsonFileService).patchGroup(eq(groupId), any(PatchRequest.class));
+        verify(scimRepository).getGroupById(groupId);
+        verify(scimRepository).patchGroup(eq(groupId), any(PatchRequest.class));
     }
     
     @Test
@@ -303,8 +303,8 @@ public class GroupMembersPatchTest {
         updatedGroup.setDisplayName("Test Group");
         updatedGroup.setMembers(Collections.emptyList());
         
-        when(jsonFileService.getGroupById(groupId)).thenReturn(testGroup);
-        when(jsonFileService.patchGroup(eq(groupId), any(PatchRequest.class))).thenReturn(updatedGroup);
+        when(scimRepository.getGroupById(groupId)).thenReturn(testGroup);
+        when(scimRepository.patchGroup(eq(groupId), any(PatchRequest.class))).thenReturn(updatedGroup);
         
         String patchBody = """
             {
@@ -328,8 +328,8 @@ public class GroupMembersPatchTest {
                 .andExpect(jsonPath("$.members").isArray())
                 .andExpect(jsonPath("$.members", hasSize(0)));
         
-        verify(jsonFileService).getGroupById(groupId);
-        verify(jsonFileService).patchGroup(eq(groupId), any(PatchRequest.class));
+        verify(scimRepository).getGroupById(groupId);
+        verify(scimRepository).patchGroup(eq(groupId), any(PatchRequest.class));
     }
     
     @Test
@@ -337,7 +337,7 @@ public class GroupMembersPatchTest {
     void testPatchGroup_GroupNotFound() throws Exception {
         String groupId = "nonexistent-group-id";
         
-        when(jsonFileService.getGroupById(groupId)).thenReturn(null);
+        when(scimRepository.getGroupById(groupId)).thenReturn(null);
         
         String patchBody = """
             {
@@ -363,7 +363,7 @@ public class GroupMembersPatchTest {
                 .content(patchBody))
                 .andExpect(status().isNotFound());
         
-        verify(jsonFileService).getGroupById(groupId);
-        verify(jsonFileService, never()).patchGroup(any(), any());
+        verify(scimRepository).getGroupById(groupId);
+        verify(scimRepository, never()).patchGroup(any(), any());
     }
 }

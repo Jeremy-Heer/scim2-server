@@ -2,7 +2,7 @@ package com.scim2.server.scim2_server.controller;
 
 import com.scim2.server.scim2_server.exception.ResourceNotFoundException;
 import com.scim2.server.scim2_server.exception.InvalidRequestException;
-import com.scim2.server.scim2_server.service.JsonFileService;
+import com.scim2.server.scim2_server.repository.ScimRepository;
 import com.scim2.server.scim2_server.model.ScimListResponse;
 import com.unboundid.scim2.common.types.GroupResource;
 import com.unboundid.scim2.common.types.Meta;
@@ -36,10 +36,10 @@ import java.util.HashSet;
 @SecurityRequirement(name = "bearerAuth")
 public class GroupsController {
     
-    private final JsonFileService jsonFileService;
-    
-    public GroupsController(JsonFileService jsonFileService) {
-        this.jsonFileService = jsonFileService;
+    private final ScimRepository scimRepository;
+
+    public GroupsController(ScimRepository scimRepository) {
+        this.scimRepository = scimRepository;
     }
     
     @Operation(summary = "List Groups", description = "Retrieve all groups with optional filtering, sorting, pagination, and attribute selection")
@@ -54,14 +54,18 @@ public class GroupsController {
             @Parameter(description = "1-based index of the first result") @RequestParam(required = false) Integer startIndex,
             @Parameter(description = "Number of results per page") @RequestParam(required = false) Integer count) {
         
-        List<GroupResource> groups = jsonFileService.searchGroups(filter, attributes, excludedAttributes, 
-                                                                  sortBy, sortOrder, startIndex, count);
-        int totalResults = jsonFileService.getTotalGroups(filter);
+        // Apply SCIM default values for pagination parameters
+        int effectiveStartIndex = (startIndex != null) ? startIndex : 1;
+        int effectiveCount = (count != null) ? count : 100; // Default to 100 if not specified
+        
+        List<GroupResource> groups = scimRepository.searchGroups(filter, attributes, excludedAttributes, 
+                                                                  sortBy, sortOrder, effectiveStartIndex, effectiveCount);
+        int totalResults = scimRepository.getTotalGroups(filter);
         
         ScimListResponse<GroupResource> response = new ScimListResponse<>(
             totalResults,
             groups,
-            startIndex != null ? startIndex : 1
+            effectiveStartIndex
         );
         
         return ResponseEntity.ok()
@@ -77,7 +81,7 @@ public class GroupsController {
             @PathVariable String id,
             @Parameter(description = "Comma-separated list of attribute names to return") @RequestParam(required = false) String attributes,
             @Parameter(description = "Comma-separated list of attribute names to exclude") @RequestParam(required = false) String excludedAttributes) {
-        GroupResource group = jsonFileService.getGroupById(id, attributes, excludedAttributes);
+        GroupResource group = scimRepository.getGroupById(id, attributes, excludedAttributes);
         if (group == null) {
             throw new ResourceNotFoundException("Group", id);
         }
@@ -113,7 +117,7 @@ public class GroupsController {
         meta.setLocation(URI.create(request.getRequestURL().toString()));
         group.setMeta(meta);
         
-        GroupResource savedGroup = jsonFileService.saveGroup(group);
+        GroupResource savedGroup = scimRepository.saveGroup(group);
         
         return ResponseEntity.status(HttpStatus.CREATED)
             .contentType(MediaType.parseMediaType("application/scim+json"))
@@ -126,7 +130,7 @@ public class GroupsController {
     @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content)
     @PutMapping(value = "/{id}", consumes = "application/scim+json", produces = "application/scim+json")
     public ResponseEntity<GroupResource> updateGroup(@PathVariable String id, @RequestBody GroupResource group, HttpServletRequest request) {
-        if (jsonFileService.getGroupById(id) == null) {
+        if (scimRepository.getGroupById(id) == null) {
             throw new ResourceNotFoundException("Group", id);
         }
         
@@ -149,7 +153,7 @@ public class GroupsController {
         meta.setLocation(URI.create(request.getRequestURL().toString()));
         group.setMeta(meta);
         
-        GroupResource updatedGroup = jsonFileService.updateGroup(id, group);
+        GroupResource updatedGroup = scimRepository.updateGroup(id, group);
         
         return ResponseEntity.ok()
             .contentType(MediaType.parseMediaType("application/scim+json"))
@@ -161,7 +165,7 @@ public class GroupsController {
     @ApiResponse(responseCode = "404", description = "Group not found", content = @Content)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteGroup(@PathVariable String id) {
-        if (!jsonFileService.deleteGroup(id)) {
+        if (!scimRepository.deleteGroup(id)) {
             throw new ResourceNotFoundException("Group", id);
         }
         
@@ -174,12 +178,12 @@ public class GroupsController {
     @ApiResponse(responseCode = "400", description = "Invalid patch request", content = @Content)
     @PatchMapping(value = "/{id}", consumes = "application/scim+json", produces = "application/scim+json")
     public ResponseEntity<GroupResource> patchGroup(@PathVariable String id, @RequestBody PatchRequest patchRequest, HttpServletRequest request) {
-        GroupResource existingGroup = jsonFileService.getGroupById(id);
+        GroupResource existingGroup = scimRepository.getGroupById(id);
         if (existingGroup == null) {
             throw new ResourceNotFoundException("Group", id);
         }
         
-        GroupResource patchedGroup = jsonFileService.patchGroup(id, patchRequest);
+        GroupResource patchedGroup = scimRepository.patchGroup(id, patchRequest);
         
         // Update meta information
         Meta meta = patchedGroup.getMeta();
@@ -198,8 +202,8 @@ public class GroupsController {
     
     @PostMapping("/.search")
     public ResponseEntity<ScimListResponse<GroupResource>> searchGroups(@RequestBody SearchRequest searchRequest) throws ScimException, IOException {
-        List<GroupResource> groups = jsonFileService.searchGroups(searchRequest);
-        int totalResults = jsonFileService.getTotalGroups(searchRequest);
+        List<GroupResource> groups = scimRepository.searchGroups(searchRequest);
+        int totalResults = scimRepository.getTotalGroups(searchRequest);
         
         ScimListResponse<GroupResource> response = new ScimListResponse<>();
         response.setSchemas(Collections.singletonList("urn:ietf:params:scim:api:messages:2.0:ListResponse"));
@@ -243,7 +247,7 @@ public class GroupsController {
             memberIds.add(memberId);
             
             // Check if the user with this ID exists in the system
-            if (jsonFileService.getUserById(memberId) == null) {
+            if (scimRepository.getUserById(memberId) == null) {
                 throw new InvalidRequestException("Member with id '" + memberId + "' does not exist in the system");
             }
             
@@ -285,7 +289,7 @@ public class GroupsController {
             }
             
             // Verify that the referenced user exists
-            if (jsonFileService.getUserById(refUserId) == null) {
+            if (scimRepository.getUserById(refUserId) == null) {
                 throw new InvalidRequestException("User referenced in $ref with id '" + refUserId + "' does not exist in the system");
             }
             

@@ -2,7 +2,7 @@ package com.scim2.server.scim2_server.controller;
 
 import com.scim2.server.scim2_server.exception.ResourceNotFoundException;
 import com.scim2.server.scim2_server.exception.InvalidRequestException;
-import com.scim2.server.scim2_server.service.JsonFileService;
+import com.scim2.server.scim2_server.repository.ScimRepository;
 import com.scim2.server.scim2_server.model.ScimListResponse;
 import com.unboundid.scim2.common.types.UserResource;
 import com.unboundid.scim2.common.types.Meta;
@@ -30,10 +30,10 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 public class UsersController {
     
-    private final JsonFileService jsonFileService;
-    
-    public UsersController(JsonFileService jsonFileService) {
-        this.jsonFileService = jsonFileService;
+    private final ScimRepository scimRepository;
+
+    public UsersController(ScimRepository scimRepository) {
+        this.scimRepository = scimRepository;
     }
     
     @Operation(summary = "List Users", description = "Retrieve all users with optional filtering, sorting, pagination, and attribute selection")
@@ -48,14 +48,18 @@ public class UsersController {
             @Parameter(description = "1-based index of the first result") @RequestParam(required = false) Integer startIndex,
             @Parameter(description = "Number of results per page") @RequestParam(required = false) Integer count) {
         
-        List<UserResource> users = jsonFileService.searchUsers(filter, attributes, excludedAttributes, 
-                                                               sortBy, sortOrder, startIndex, count);
-        int totalResults = jsonFileService.getTotalUsers(filter);
+        // Apply SCIM default values for pagination parameters
+        int effectiveStartIndex = (startIndex != null) ? startIndex : 1;
+        int effectiveCount = (count != null) ? count : 100; // Default to 100 if not specified
+        
+        List<UserResource> users = scimRepository.searchUsers(filter, attributes, excludedAttributes, 
+                                                               sortBy, sortOrder, effectiveStartIndex, effectiveCount);
+        int totalResults = scimRepository.getTotalUsers(filter);
         
         ScimListResponse<UserResource> response = new ScimListResponse<>(
             totalResults,
             users,
-            startIndex != null ? startIndex : 1
+            effectiveStartIndex
         );
         
         return ResponseEntity.ok()
@@ -71,7 +75,7 @@ public class UsersController {
             @PathVariable String id,
             @Parameter(description = "Comma-separated list of attribute names to return") @RequestParam(required = false) String attributes,
             @Parameter(description = "Comma-separated list of attribute names to exclude") @RequestParam(required = false) String excludedAttributes) {
-        UserResource user = jsonFileService.getUserById(id, attributes, excludedAttributes);
+        UserResource user = scimRepository.getUserById(id, attributes, excludedAttributes);
         if (user == null) {
             throw new ResourceNotFoundException("User", id);
         }
@@ -107,7 +111,7 @@ public class UsersController {
         meta.setLocation(URI.create(request.getRequestURL().toString()));
         user.setMeta(meta);
         
-        UserResource savedUser = jsonFileService.saveUser(user);
+        UserResource savedUser = scimRepository.saveUser(user);
         
         return ResponseEntity.status(HttpStatus.CREATED)
             .contentType(MediaType.parseMediaType("application/scim+json"))
@@ -120,7 +124,7 @@ public class UsersController {
     @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content)
     @PutMapping(value = "/{id}", consumes = "application/scim+json", produces = "application/scim+json")
     public ResponseEntity<UserResource> updateUser(@PathVariable String id, @RequestBody UserResource user, HttpServletRequest request) {
-        if (jsonFileService.getUserById(id) == null) {
+        if (scimRepository.getUserById(id) == null) {
             throw new ResourceNotFoundException("User", id);
         }
         
@@ -143,7 +147,7 @@ public class UsersController {
         meta.setLocation(URI.create(request.getRequestURL().toString()));
         user.setMeta(meta);
         
-        UserResource updatedUser = jsonFileService.updateUser(id, user);
+        UserResource updatedUser = scimRepository.updateUser(id, user);
         
         return ResponseEntity.ok()
             .contentType(MediaType.parseMediaType("application/scim+json"))
@@ -155,7 +159,7 @@ public class UsersController {
     @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable String id) {
-        if (!jsonFileService.deleteUser(id)) {
+        if (!scimRepository.deleteUser(id)) {
             throw new ResourceNotFoundException("User", id);
         }
         
@@ -168,12 +172,12 @@ public class UsersController {
     @ApiResponse(responseCode = "400", description = "Invalid patch request", content = @Content)
     @PatchMapping(value = "/{id}", consumes = "application/scim+json", produces = "application/scim+json")
     public ResponseEntity<UserResource> patchUser(@PathVariable String id, @RequestBody PatchRequest patchRequest, HttpServletRequest request) {
-        UserResource existingUser = jsonFileService.getUserById(id);
+        UserResource existingUser = scimRepository.getUserById(id);
         if (existingUser == null) {
             throw new ResourceNotFoundException("User", id);
         }
         
-        UserResource patchedUser = jsonFileService.patchUser(id, patchRequest);
+        UserResource patchedUser = scimRepository.patchUser(id, patchRequest);
         
         // Update meta information
         Meta meta = patchedUser.getMeta();
@@ -195,8 +199,8 @@ public class UsersController {
     @ApiResponse(responseCode = "400", description = "Invalid search request", content = @Content)
     @PostMapping(value = "/.search", consumes = "application/scim+json", produces = "application/scim+json")
     public ResponseEntity<ScimListResponse<UserResource>> searchUsers(@RequestBody SearchRequest searchRequest) {
-        List<UserResource> users = jsonFileService.searchUsers(searchRequest);
-        int totalResults = jsonFileService.getTotalUsers(searchRequest);
+        List<UserResource> users = scimRepository.searchUsers(searchRequest);
+        int totalResults = scimRepository.getTotalUsers(searchRequest);
         
         ScimListResponse<UserResource> response = new ScimListResponse<>(
             totalResults,
