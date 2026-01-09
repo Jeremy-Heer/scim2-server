@@ -45,6 +45,34 @@ public class LdapRepository implements ScimRepository {
     
     private static final Logger logger = LoggerFactory.getLogger(LdapRepository.class);
     
+    // LDAP attributes to request for User entries (including operational attributes for meta)
+    private static final String[] USER_ATTRIBUTES = {
+        // Standard LDAP attributes
+        "uid", "cn", "sn", "givenName", "displayName", "mail", "telephoneNumber",
+        "personalTitle", "title", "employeeType", "preferredLanguage",
+        // SCIM-specific attributes
+        "scimExternalId", "scimActive", "scimMiddleName", "scimHonorificSuffix",
+        "scimNickName", "scimLocale", "scimTimezone", "scimProfileUrl", "scimUserType",
+        "scimEmails", "scimPhoneNumbers", "scimAddresses", "scimIms", "scimPhotos",
+        "scimRoles", "scimEntitlements", "scimX509Certificates",
+        "scimCostCenter", "scimOrganization", "scimDivision",
+        "scimResourceType", "scimVersion",
+        // Virtual attributes
+        "memberOf",
+        // Operational attributes (for meta)
+        "entryUUID", "createTimestamp", "modifyTimestamp"
+    };
+    
+    // LDAP attributes to request for Group entries (including operational attributes for meta)
+    private static final String[] GROUP_ATTRIBUTES = {
+        // Standard LDAP attributes
+        "cn", "member",
+        // SCIM-specific attributes
+        "scimExternalId", "scimResourceType", "scimVersion",
+        // Operational attributes (for meta)
+        "entryUUID", "createTimestamp", "modifyTimestamp"
+    };
+    
     private final LdapConnectionService connectionService;
     private final ScimLdapAttributeMapper attributeMapper;
     private final ScimFilterToLdapConverter filterConverter;
@@ -80,7 +108,7 @@ public class LdapRepository implements ScimRepository {
                 connectionService.getLdapProperties().getUserBaseDn(),
                 SearchScope.SUB,
                 Filter.createEqualityFilter("objectClass", "scimUser"),
-                "*", "memberOf" // Request all attributes plus virtual memberOf
+                USER_ATTRIBUTES
             );
             
             SearchResult result = connectionService.search(searchRequest);
@@ -213,7 +241,7 @@ public class LdapRepository implements ScimRepository {
                         connectionService.getLdapProperties().getUserBaseDn(),
                         SearchScope.SUB,
                         filter,
-                        "*", "+" // Request all user and operational attributes (including entryUUID)
+                        USER_ATTRIBUTES
                     );
                     searchRequest.setSizeLimit(1);
                     SearchResult searchResult = connectionService.search(searchRequest);
@@ -398,7 +426,7 @@ public class LdapRepository implements ScimRepository {
                 connectionService.getLdapProperties().getUserBaseDn(),
                 SearchScope.SUB,
                 ldapFilter,
-                "*", "memberOf"
+                USER_ATTRIBUTES
             );
             
             // Add server-side sort control if sortBy is specified
@@ -628,7 +656,7 @@ public class LdapRepository implements ScimRepository {
                         connectionService.getLdapProperties().getGroupBaseDn(),
                         SearchScope.SUB,
                         filter,
-                        "*", "+" // Request all user and operational attributes (including entryUUID)
+                        GROUP_ATTRIBUTES // Request all group and operational attributes (including entryUUID)
                     );
                     searchRequest.setSizeLimit(1);
                     SearchResult searchResult = connectionService.search(searchRequest);
@@ -642,7 +670,7 @@ public class LdapRepository implements ScimRepository {
                     }
                 } else {
                     // Non-entryUUID mode: search by DN
-                    entry = connectionService.getConnection().getEntry(dn, "*", "+");
+                    entry = connectionService.getConnection().getEntry(dn, GROUP_ATTRIBUTES);
                     if (entry != null) {
                         return attributeMapper.ldapEntryToGroup(entry, connectionService);
                     }
@@ -950,7 +978,7 @@ public class LdapRepository implements ScimRepository {
                 connectionService.getLdapProperties().getGroupBaseDn(),
                 SearchScope.SUB,
                 ldapFilter,
-                "*"
+                GROUP_ATTRIBUTES
             );
             
             if (sortBy != null && !sortBy.isEmpty()) {

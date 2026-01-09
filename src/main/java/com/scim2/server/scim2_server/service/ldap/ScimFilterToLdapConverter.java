@@ -4,6 +4,7 @@ import com.unboundid.ldap.sdk.Filter;
 import com.unboundid.scim2.common.filters.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ import java.util.List;
  * For simple cases, maps to standard LDAP attributes where possible.
  */
 @Component
+@ConditionalOnProperty(name = "ldap.enabled", havingValue = "true")
 public class ScimFilterToLdapConverter {
     
     private static final Logger logger = LoggerFactory.getLogger(ScimFilterToLdapConverter.class);

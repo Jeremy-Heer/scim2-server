@@ -10,6 +10,7 @@ import com.unboundid.scim2.common.types.GroupResource;
 import com.unboundid.scim2.common.types.UserResource;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,7 +42,47 @@ public class BulkController {
     @ApiResponse(responseCode = "200", description = "Bulk operations processed")
     @ApiResponse(responseCode = "400", description = "Invalid bulk request", content = @Content)
     @PostMapping(consumes = "application/scim+json", produces = "application/scim+json")
-    public ResponseEntity<BulkResponse> processBulk(@RequestBody BulkRequest bulkRequest, HttpServletRequest request) {
+    public ResponseEntity<BulkResponse> processBulk(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Bulk request with operations to perform", required = true,
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "schemas": ["urn:ietf:params:scim:api:messages:2.0:BulkRequest"],
+                              "failOnErrors": 1,
+                              "Operations": [
+                                {
+                                  "method": "POST",
+                                  "path": "/Users",
+                                  "bulkId": "qwerty",
+                                  "data": {
+                                    "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+                                    "userName": "alice.smith",
+                                    "name": {
+                                      "givenName": "Alice",
+                                      "familyName": "Smith"
+                                    },
+                                    "emails": [
+                                      {
+                                        "value": "alice.smith@example.com",
+                                        "type": "work",
+                                        "primary": true
+                                      }
+                                    ],
+                                    "active": true
+                                  }
+                                },
+                                {
+                                  "method": "POST",
+                                  "path": "/Groups",
+                                  "bulkId": "ytrewq",
+                                  "data": {
+                                    "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+                                    "displayName": "Test Group"
+                                  }
+                                }
+                              ]
+                            }
+                            """)))
+            @RequestBody BulkRequest bulkRequest, HttpServletRequest request) {
         
         if (bulkRequest.getOperations() == null || bulkRequest.getOperations().isEmpty()) {
             throw new InvalidRequestException("No operations provided in bulk request");

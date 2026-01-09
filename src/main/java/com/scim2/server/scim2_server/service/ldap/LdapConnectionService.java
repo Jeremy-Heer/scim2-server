@@ -212,11 +212,29 @@ public class LdapConnectionService {
     public SearchResultEntry findEntryByUuid(String uuid, String baseDn) throws LDAPException {
         Filter filter = Filter.createEqualityFilter("entryUUID", uuid);
         
+        // Request specific attributes including operational attributes for meta
+        String[] attributes = {
+            // Standard attributes
+            "uid", "cn", "sn", "givenName", "displayName", "mail", "telephoneNumber",
+            "personalTitle", "title", "employeeType", "preferredLanguage", "member",
+            // SCIM-specific attributes
+            "scimExternalId", "scimActive", "scimMiddleName", "scimHonorificSuffix",
+            "scimNickName", "scimLocale", "scimTimezone", "scimProfileUrl", "scimUserType",
+            "scimEmails", "scimPhoneNumbers", "scimAddresses", "scimIms", "scimPhotos",
+            "scimRoles", "scimEntitlements", "scimX509Certificates",
+            "scimCostCenter", "scimOrganization", "scimDivision",
+            "scimResourceType", "scimVersion",
+            // Virtual attributes
+            "memberOf",
+            // Operational attributes (for meta)
+            "entryUUID", "createTimestamp", "modifyTimestamp"
+        };
+        
         SearchRequest searchRequest = new SearchRequest(
             baseDn,
             SearchScope.SUB,
             filter,
-            "*", "+" // Request all user and operational attributes
+            attributes
         );
         
         searchRequest.setSizeLimit(1);

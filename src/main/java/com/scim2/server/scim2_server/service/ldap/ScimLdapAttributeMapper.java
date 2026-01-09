@@ -12,6 +12,7 @@ import com.unboundid.scim2.common.types.*;
 import com.unboundid.scim2.common.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
  * - x509Certificates[] → scimX509Certificates (JSON array)
  */
 @Component
+@ConditionalOnProperty(name = "ldap.enabled", havingValue = "true")
 public class ScimLdapAttributeMapper {
     
     private static final Logger logger = LoggerFactory.getLogger(ScimLdapAttributeMapper.class);
@@ -315,6 +317,19 @@ public class ScimLdapAttributeMapper {
         // Metadata fields (resource type, version)
         attributes.put("scimResourceType", new Attribute("scimResourceType", "User"));
         
+        // Store meta information if available
+        if (user.getMeta() != null) {
+            Meta meta = user.getMeta();
+            
+            if (meta.getVersion() != null) {
+                attributes.put("scimVersion", new Attribute("scimVersion", meta.getVersion()));
+            }
+            
+            // Note: created and lastModified timestamps are automatically maintained
+            // by LDAP server as createTimestamp and modifyTimestamp operational attributes.
+            // No need to store them explicitly.
+        }
+        
         return attributes;
     }
     
@@ -497,10 +512,36 @@ public class ScimLdapAttributeMapper {
         Meta meta = new Meta();
         meta.setResourceType("User");
         
-        // Created/Modified timestamps from LDAP operational attributes
+        // Version
+        String version = entry.getAttributeValue("scimVersion");
+        if (version != null) {
+            meta.setVersion(version);
+        }
+        
+        // Created and Modified timestamps from LDAP operational attributes
         String createTimestamp = entry.getAttributeValue("createTimestamp");
+        if (createTimestamp != null) {
+            try {
+                Calendar created = parseLdapTimestamp(createTimestamp);
+                if (created != null) {
+                    meta.setCreated(created);
+                }
+            } catch (Exception e) {
+                logger.debug("Failed to parse createTimestamp: {}", createTimestamp);
+            }
+        }
+        
         String modifyTimestamp = entry.getAttributeValue("modifyTimestamp");
-        // TODO: Parse LDAP timestamps and convert to Calendar
+        if (modifyTimestamp != null) {
+            try {
+                Calendar lastModified = parseLdapTimestamp(modifyTimestamp);
+                if (lastModified != null) {
+                    meta.setLastModified(lastModified);
+                }
+            } catch (Exception e) {
+                logger.debug("Failed to parse modifyTimestamp: {}", modifyTimestamp);
+            }
+        }
         
         user.setMeta(meta);
         
@@ -540,6 +581,19 @@ public class ScimLdapAttributeMapper {
         
         // Metadata
         attributes.put("scimResourceType", new Attribute("scimResourceType", "Group"));
+        
+        // Store meta information if available
+        if (group.getMeta() != null) {
+            Meta meta = group.getMeta();
+            
+            if (meta.getVersion() != null) {
+                attributes.put("scimVersion", new Attribute("scimVersion", meta.getVersion()));
+            }
+            
+            // Note: created and lastModified timestamps are automatically maintained
+            // by LDAP server as createTimestamp and modifyTimestamp operational attributes.
+            // No need to store them explicitly.
+        }
         
         return attributes;
     }
@@ -594,6 +648,38 @@ public class ScimLdapAttributeMapper {
         // Metadata
         Meta meta = new Meta();
         meta.setResourceType("Group");
+        
+        // Version
+        String version = entry.getAttributeValue("scimVersion");
+        if (version != null) {
+            meta.setVersion(version);
+        }
+        
+        // Created and Modified timestamps from LDAP operational attributes
+        String createTimestamp = entry.getAttributeValue("createTimestamp");
+        if (createTimestamp != null) {
+            try {
+                Calendar created = parseLdapTimestamp(createTimestamp);
+                if (created != null) {
+                    meta.setCreated(created);
+                }
+            } catch (Exception e) {
+                logger.debug("Failed to parse createTimestamp: {}", createTimestamp);
+            }
+        }
+        
+        String modifyTimestamp = entry.getAttributeValue("modifyTimestamp");
+        if (modifyTimestamp != null) {
+            try {
+                Calendar lastModified = parseLdapTimestamp(modifyTimestamp);
+                if (lastModified != null) {
+                    meta.setLastModified(lastModified);
+                }
+            } catch (Exception e) {
+                logger.debug("Failed to parse modifyTimestamp: {}", modifyTimestamp);
+            }
+        }
+        
         group.setMeta(meta);
         
         return group;
@@ -638,5 +724,44 @@ public class ScimLdapAttributeMapper {
                 logger.error("Failed to deserialize {} from JSON", attributeName, e);
             }
         }
+    }
+    
+    /**
+     * Parse an LDAP generalized time timestamp to Calendar.
+     * Supports multiple LDAP timestamp formats:
+     * - YYYYMMDDHHmmss.SSSZ
+     * - YYYYMMDDHHmmssZ
+     * - YYYYMMDDHHmmss.SSS'Z'
+     * 
+     * @param timestamp LDAP timestamp string
+     * @return Calendar object or null if parsing fails
+     */
+    private Calendar parseLdapTimestamp(String timestamp) {
+        if (timestamp == null || timestamp.trim().isEmpty()) {
+            return null;
+        }
+        
+        // Try common LDAP timestamp formats
+        String[] patterns = {
+            "yyyyMMddHHmmss.SSS'Z'",
+            "yyyyMMddHHmmss'Z'",
+            "yyyyMMddHHmmss.SSSZ",
+            "yyyyMMddHHmmssZ"
+        };
+        
+        for (String pattern : patterns) {
+            try {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(pattern);
+                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+                cal.setTime(sdf.parse(timestamp));
+                return cal;
+            } catch (java.text.ParseException e) {
+                // Try next pattern
+            }
+        }
+        
+        logger.warn("Failed to parse LDAP timestamp: {}", timestamp);
+        return null;
     }
 }

@@ -12,6 +12,7 @@ import com.unboundid.scim2.common.exceptions.ScimException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -95,7 +96,15 @@ public class GroupsController {
     @ApiResponse(responseCode = "201", description = "Group created successfully")
     @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content)
     @PostMapping(consumes = "application/scim+json", produces = "application/scim+json")
-    public ResponseEntity<GroupResource> createGroup(@RequestBody GroupResource group, HttpServletRequest request) {
+    public ResponseEntity<GroupResource> createGroup(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Group resource to create", required = true,
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+                              "displayName": "Engineering Team"
+                            }
+                            """)))
+            @RequestBody GroupResource group, HttpServletRequest request) {
         // Reject requests that include an ID - IDs are server-generated
         if (group.getId() != null && !group.getId().trim().isEmpty()) {
             throw new InvalidRequestException("ID must not be provided in create requests. IDs are server-generated.");
@@ -129,7 +138,15 @@ public class GroupsController {
     @ApiResponse(responseCode = "404", description = "Group not found", content = @Content)
     @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content)
     @PutMapping(value = "/{id}", consumes = "application/scim+json", produces = "application/scim+json")
-    public ResponseEntity<GroupResource> updateGroup(@PathVariable String id, @RequestBody GroupResource group, HttpServletRequest request) {
+    public ResponseEntity<GroupResource> updateGroup(@PathVariable String id,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Complete group resource to replace the existing one", required = true,
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+                              "displayName": "Engineering Team"
+                            }
+                            """)))
+            @RequestBody GroupResource group, HttpServletRequest request) {
         if (scimRepository.getGroupById(id) == null) {
             throw new ResourceNotFoundException("Group", id);
         }
@@ -177,7 +194,21 @@ public class GroupsController {
     @ApiResponse(responseCode = "404", description = "Group not found", content = @Content)
     @ApiResponse(responseCode = "400", description = "Invalid patch request", content = @Content)
     @PatchMapping(value = "/{id}", consumes = "application/scim+json", produces = "application/scim+json")
-    public ResponseEntity<GroupResource> patchGroup(@PathVariable String id, @RequestBody PatchRequest patchRequest, HttpServletRequest request) {
+    public ResponseEntity<GroupResource> patchGroup(@PathVariable String id,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "SCIM PATCH request with operations to apply", required = true,
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+                              "Operations": [
+                                {
+                                  "op": "replace",
+                                  "path": "displayName",
+                                  "value": "Updated Engineering Team"
+                                }
+                              ]
+                            }
+                            """)))
+            @RequestBody PatchRequest patchRequest, HttpServletRequest request) {
         GroupResource existingGroup = scimRepository.getGroupById(id);
         if (existingGroup == null) {
             throw new ResourceNotFoundException("Group", id);
@@ -200,8 +231,21 @@ public class GroupsController {
             .body(patchedGroup);
     }
     
-    @PostMapping("/.search")
-    public ResponseEntity<ScimListResponse<GroupResource>> searchGroups(@RequestBody SearchRequest searchRequest) throws ScimException, IOException {
+    @Operation(summary = "Search Groups using POST", description = "Search groups using HTTP POST with a SearchRequest body, as per RFC 7644 section 3.4.3")
+    @ApiResponse(responseCode = "200", description = "Search completed successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid search request", content = @Content)
+    @PostMapping(value = "/.search", consumes = "application/scim+json", produces = "application/scim+json")
+    public ResponseEntity<ScimListResponse<GroupResource>> searchGroups(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Search request with filter, pagination, and attribute selection", required = true,
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+                              "filter": "displayName eq \"Engineering Team\"",
+                              "startIndex": 1,
+                              "count": 10
+                            }
+                            """)))
+            @RequestBody SearchRequest searchRequest) throws ScimException, IOException {
         List<GroupResource> groups = scimRepository.searchGroups(searchRequest);
         int totalResults = scimRepository.getTotalGroups(searchRequest);
         

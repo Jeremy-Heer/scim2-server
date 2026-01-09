@@ -11,6 +11,7 @@ import com.unboundid.scim2.common.messages.SearchRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -89,7 +90,29 @@ public class UsersController {
     @ApiResponse(responseCode = "201", description = "User created successfully")
     @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content)
     @PostMapping(consumes = "application/scim+json", produces = "application/scim+json")
-    public ResponseEntity<UserResource> createUser(@RequestBody UserResource user, HttpServletRequest request) {
+    public ResponseEntity<UserResource> createUser(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "User resource to create", required = true,
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+                              "userName": "bjensen",
+                              "name": {
+                                "formatted": "Ms. Barbara J Jensen III",
+                                "familyName": "Jensen",
+                                "givenName": "Barbara"
+                              },
+                              "displayName": "Barbara Jensen",
+                              "emails": [
+                                {
+                                  "value": "bjensen@example.com",
+                                  "type": "work",
+                                  "primary": true
+                                }
+                              ],
+                              "active": true
+                            }
+                            """)))
+            @RequestBody UserResource user, HttpServletRequest request) {
         // Reject requests that include an ID - IDs are server-generated
         if (user.getId() != null && !user.getId().trim().isEmpty()) {
             throw new InvalidRequestException("ID must not be provided in create requests. IDs are server-generated.");
@@ -123,7 +146,29 @@ public class UsersController {
     @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
     @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content)
     @PutMapping(value = "/{id}", consumes = "application/scim+json", produces = "application/scim+json")
-    public ResponseEntity<UserResource> updateUser(@PathVariable String id, @RequestBody UserResource user, HttpServletRequest request) {
+    public ResponseEntity<UserResource> updateUser(@PathVariable String id,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Complete user resource to replace the existing one", required = true,
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+                              "userName": "bjensen",
+                              "name": {
+                                "formatted": "Ms. Barbara J Jensen III",
+                                "familyName": "Jensen",
+                                "givenName": "Barbara"
+                              },
+                              "displayName": "Barbara Jensen",
+                              "emails": [
+                                {
+                                  "value": "bjensen@example.com",
+                                  "type": "work",
+                                  "primary": true
+                                }
+                              ],
+                              "active": true
+                            }
+                            """)))
+            @RequestBody UserResource user, HttpServletRequest request) {
         if (scimRepository.getUserById(id) == null) {
             throw new ResourceNotFoundException("User", id);
         }
@@ -171,7 +216,21 @@ public class UsersController {
     @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
     @ApiResponse(responseCode = "400", description = "Invalid patch request", content = @Content)
     @PatchMapping(value = "/{id}", consumes = "application/scim+json", produces = "application/scim+json")
-    public ResponseEntity<UserResource> patchUser(@PathVariable String id, @RequestBody PatchRequest patchRequest, HttpServletRequest request) {
+    public ResponseEntity<UserResource> patchUser(@PathVariable String id,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "SCIM PATCH request with operations to apply", required = true,
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+                              "Operations": [
+                                {
+                                  "op": "replace",
+                                  "path": "displayName",
+                                  "value": "Barbara J. Jensen"
+                                }
+                              ]
+                            }
+                            """)))
+            @RequestBody PatchRequest patchRequest, HttpServletRequest request) {
         UserResource existingUser = scimRepository.getUserById(id);
         if (existingUser == null) {
             throw new ResourceNotFoundException("User", id);
@@ -198,7 +257,17 @@ public class UsersController {
     @ApiResponse(responseCode = "200", description = "Search completed successfully")
     @ApiResponse(responseCode = "400", description = "Invalid search request", content = @Content)
     @PostMapping(value = "/.search", consumes = "application/scim+json", produces = "application/scim+json")
-    public ResponseEntity<ScimListResponse<UserResource>> searchUsers(@RequestBody SearchRequest searchRequest) {
+    public ResponseEntity<ScimListResponse<UserResource>> searchUsers(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Search request with filter, pagination, and attribute selection", required = true,
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
+                              "filter": "userName eq \"bjensen\"",
+                              "startIndex": 1,
+                              "count": 10
+                            }
+                            """)))
+            @RequestBody SearchRequest searchRequest) {
         List<UserResource> users = scimRepository.searchUsers(searchRequest);
         int totalResults = scimRepository.getTotalUsers(searchRequest);
         
