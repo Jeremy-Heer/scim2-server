@@ -105,15 +105,10 @@ public class GroupsController {
                             }
                             """)))
             @RequestBody GroupResource group, HttpServletRequest request) {
-        // Reject requests that include an ID - IDs are server-generated
-        if (group.getId() != null && !group.getId().trim().isEmpty()) {
-            throw new InvalidRequestException("ID must not be provided in create requests. IDs are server-generated.");
-        }
-        
-        // Reject requests that include meta data - meta is server-generated
-        if (group.getMeta() != null) {
-            throw new InvalidRequestException("Meta data must not be provided in create requests. Meta information is server-generated.");
-        }
+        // Ignore readOnly attributes per RFC 7644 Section 3.5.1
+        // IDs and meta are server-generated, so we ignore any provided by the client
+        group.setId(null);
+        group.setMeta(null);
         
         validateGroup(group);
         
@@ -151,15 +146,14 @@ public class GroupsController {
             throw new ResourceNotFoundException("Group", id);
         }
         
-        // Reject attempts to change the ID or provide a different ID
+        // Reject attempts to change the ID - validate if provided
         if (group.getId() != null && !group.getId().equals(id)) {
             throw new InvalidRequestException("ID in request body must match the ID in the URL path. IDs are immutable.");
         }
         
-        // Reject requests that include meta data - meta is server-generated
-        if (group.getMeta() != null) {
-            throw new InvalidRequestException("Meta data must not be provided in update requests. Meta information is server-generated.");
-        }
+        // Ignore readOnly attributes per RFC 7644 Section 3.5.1
+        // Meta is server-generated, so we ignore any provided by the client
+        group.setMeta(null);
         
         validateGroup(group);
         

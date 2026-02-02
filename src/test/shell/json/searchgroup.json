@@ -1,6 +1,6 @@
 {
   "schemas": ["urn:ietf:params:scim:api:messages:2.0:SearchRequest"],
-  "filter": "displayName eq \"Test Group\"",
+  "filter": "displayName eq \"${GROUP_NAME}\"",
   "startIndex": 1,
   "count": 10
 }

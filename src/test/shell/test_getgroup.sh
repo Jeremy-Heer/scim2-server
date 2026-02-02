@@ -1,19 +1,21 @@
-
 #!/bin/bash
 set -e
 source "$(dirname "$0")/.env"
 
+GROUP_NAME="$GROUP_NAME"
 
-
+# Build and encode the filter string
+FILTER="displayName eq \"$GROUP_NAME\""
+ENCODED_FILTER=$(printf '%s' "$FILTER" | jq -sRr @uri)
 
 # Log file for requests and responses
 LOG_FILE="$(dirname "$0")/test_shell_requests.log"
 
 # Prepare request details for group ID fetch
-REQUEST_DETAILS_ID="GET $SCIM2_SERVER_URL/Groups?filter=$FILTER\nAuthorization: Bearer $SCIM2_BEARER_TOKEN\nContent-Type: application/scim+json"
+REQUEST_DETAILS_ID="GET $SCIM2_SERVER_URL/Groups?filter=$ENCODED_FILTER\nAuthorization: Bearer $SCIM2_BEARER_TOKEN\nContent-Type: application/scim+json"
 
 FILTER_RESPONSE=$(curl -s -w "%{http_code}" -o filter_response.json \
-  -X GET "$SCIM2_SERVER_URL/Groups?filter=$FILTER" \
+  -X GET "$SCIM2_SERVER_URL/Groups?filter=$ENCODED_FILTER" \
   -H "Authorization: Bearer $SCIM2_BEARER_TOKEN" \
   -H "Content-Type: application/scim+json")
 

@@ -41,7 +41,7 @@ echo -e "GROUP_ID: $GROUP_ID" >> "$LOG_FILE"
 # Update patch JSON with correct user ID
 PATCH_FILE="$(dirname "$0")/json/patch_addusertogroup.json"
 TMP_PATCH_FILE="$(dirname "$0")/json/patch_addusertogroup_tmp.json"
-cat "$PATCH_FILE" | sed "s/2819c223-7f76-453a-919d-413861904646/$USER_ID/g" > "$TMP_PATCH_FILE"
+cat "$PATCH_FILE" | sed "s/\${USER_ID}/$USER_ID/g" > "$TMP_PATCH_FILE"
 
 
 # Prepare request details for patch

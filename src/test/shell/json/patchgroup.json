@@ -6,7 +6,7 @@
       "path": "members",
       "value": [
         {
-          "value": "902c246b-6245-4190-8e05-6c8a36bfe2a0",
+          "value": "${USER_ID}",
           "display": "John Smith"
         }
       ]

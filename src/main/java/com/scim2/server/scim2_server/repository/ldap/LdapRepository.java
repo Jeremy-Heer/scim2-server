@@ -323,14 +323,29 @@ public class LdapRepository implements ScimRepository {
             ModifyRequest modifyRequest = new ModifyRequest(existingEntry.getDN(), modifications);
             LDAPResult result = connectionService.modify(modifyRequest);
             
-            if (result.getResultCode() == ResultCode.SUCCESS) {
-                logger.info("Updated user: {}", id);
+            // Per SCIM RFC 7644, operations should be idempotent
+            // LDAP result code 20 (ATTRIBUTE_OR_VALUE_EXISTS) should be treated as success
+            if (result.getResultCode() == ResultCode.SUCCESS || 
+                result.getResultCode() == ResultCode.ATTRIBUTE_OR_VALUE_EXISTS) {
+                if (result.getResultCode() == ResultCode.ATTRIBUTE_OR_VALUE_EXISTS) {
+                    logger.info("Updated user {} (idempotent - value already exists)", id);
+                } else {
+                    logger.info("Updated user: {}", id);
+                }
                 return getUserById(id);
             } else {
                 throw new RuntimeException("Failed to update user: " + result.getDiagnosticMessage());
             }
             
         } catch (LDAPException e) {
+            // Per SCIM RFC 7644, treat ATTRIBUTE_OR_VALUE_EXISTS and NO_SUCH_ATTRIBUTE as successful idempotent operations
+            if (e.getResultCode() == ResultCode.ATTRIBUTE_OR_VALUE_EXISTS) {
+                logger.info("User {} update operation idempotent - value already exists: {}", id, e.getMessage());
+                return getUserById(id);
+            } else if (e.getResultCode() == ResultCode.NO_SUCH_ATTRIBUTE) {
+                logger.info("User {} update operation idempotent - attribute already removed or does not exist: {}", id, e.getMessage());
+                return getUserById(id);
+            }
             logger.error("LDAP error updating user: {}", id, e);
             throw new RuntimeException("Failed to update user: " + e.getMessage(), e);
         }
@@ -745,14 +760,33 @@ public class LdapRepository implements ScimRepository {
             ModifyRequest modifyRequest = new ModifyRequest(existingEntry.getDN(), modifications);
             LDAPResult result = connectionService.modify(modifyRequest);
             
-            if (result.getResultCode() == ResultCode.SUCCESS) {
-                logger.info("Updated group: {}", id);
+            // Per SCIM RFC 7644, treat idempotent operations as success
+            // ATTRIBUTE_OR_VALUE_EXISTS (20) for add operations
+            // NO_SUCH_ATTRIBUTE (16) for remove operations
+            if (result.getResultCode() == ResultCode.SUCCESS ||
+                result.getResultCode() == ResultCode.ATTRIBUTE_OR_VALUE_EXISTS ||
+                result.getResultCode() == ResultCode.NO_SUCH_ATTRIBUTE) {
+                if (result.getResultCode() == ResultCode.ATTRIBUTE_OR_VALUE_EXISTS) {
+                    logger.info("Group {} update operation idempotent - value already exists", id);
+                } else if (result.getResultCode() == ResultCode.NO_SUCH_ATTRIBUTE) {
+                    logger.info("Group {} update operation idempotent - attribute already removed or does not exist", id);
+                } else {
+                    logger.info("Updated group: {}", id);
+                }
                 return getGroupById(id);
             } else {
                 throw new RuntimeException("Failed to update group: " + result.getDiagnosticMessage());
             }
             
         } catch (LDAPException e) {
+            // Per SCIM RFC 7644, treat ATTRIBUTE_OR_VALUE_EXISTS and NO_SUCH_ATTRIBUTE as successful idempotent operations
+            if (e.getResultCode() == ResultCode.ATTRIBUTE_OR_VALUE_EXISTS) {
+                logger.info("Group {} update operation idempotent - value already exists: {}", id, e.getMessage());
+                return getGroupById(id);
+            } else if (e.getResultCode() == ResultCode.NO_SUCH_ATTRIBUTE) {
+                logger.info("Group {} update operation idempotent - attribute already removed or does not exist: {}", id, e.getMessage());
+                return getGroupById(id);
+            }
             logger.error("LDAP error updating group: {}", id, e);
             throw new RuntimeException("Failed to update group: " + e.getMessage(), e);
         }
@@ -787,7 +821,7 @@ public class LdapRepository implements ScimRepository {
                         try {
                             JsonNode valueNode = operation.getJsonNode();
                             
-                            if (valueNode.isArray()) {
+                            if (valueNode != null && valueNode.isArray()) {
                                 for (JsonNode memberNode : valueNode) {
                                     if (memberNode.has("value")) {
                                         String memberUuid = memberNode.get("value").asText();
@@ -821,7 +855,8 @@ public class LdapRepository implements ScimRepository {
                         try {
                             JsonNode valueNode = operation.getJsonNode();
                             
-                            if (valueNode.isArray()) {
+                            if (valueNode != null && valueNode.isArray()) {
+                                // Value provided directly in the operation
                                 for (JsonNode memberNode : valueNode) {
                                     if (memberNode.has("value")) {
                                         String memberUuid = memberNode.get("value").asText();
@@ -832,6 +867,18 @@ public class LdapRepository implements ScimRepository {
                                         if (memberDn != null) {
                                             memberDnsToRemove.add(memberDn);
                                         }
+                                    }
+                                }
+                            } else if (valueNode == null && pathStr.contains("[")) {
+                                // Path-based removal: members[value eq "uuid"]
+                                String memberUuid = parseValueEqualsFilter(pathStr);
+                                if (memberUuid != null) {
+                                    String memberDn = connectionService.buildDnFromUuid(
+                                        memberUuid,
+                                        connectionService.getLdapProperties().getUserBaseDn()
+                                    );
+                                    if (memberDn != null) {
+                                        memberDnsToRemove.add(memberDn);
                                     }
                                 }
                             }
@@ -855,7 +902,7 @@ public class LdapRepository implements ScimRepository {
                         try {
                             JsonNode valueNode = operation.getJsonNode();
                             
-                            if (valueNode.isArray()) {
+                            if (valueNode != null && valueNode.isArray()) {
                                 for (JsonNode memberNode : valueNode) {
                                     if (memberNode.has("value")) {
                                         String memberUuid = memberNode.get("value").asText();
@@ -906,10 +953,22 @@ public class LdapRepository implements ScimRepository {
                 ModifyRequest modifyRequest = new ModifyRequest(existingEntry.getDN(), modifications);
                 LDAPResult result = connectionService.modify(modifyRequest);
                 
-                if (result.getResultCode() != ResultCode.SUCCESS) {
+                // Per SCIM RFC 7644 section 3.5.2, operations should be idempotent
+                // LDAP result code 20 (ATTRIBUTE_OR_VALUE_EXISTS) should be treated as success for add operations
+                // LDAP result code 16 (NO_SUCH_ATTRIBUTE) should be treated as success for remove operations
+                if (result.getResultCode() != ResultCode.SUCCESS && 
+                    result.getResultCode() != ResultCode.ATTRIBUTE_OR_VALUE_EXISTS &&
+                    result.getResultCode() != ResultCode.NO_SUCH_ATTRIBUTE) {
                     throw new RuntimeException("Failed to patch group: " + result.getDiagnosticMessage());
                 }
-                logger.info("Successfully patched group {} with {} modifications", id, modifications.size());
+                
+                if (result.getResultCode() == ResultCode.ATTRIBUTE_OR_VALUE_EXISTS) {
+                    logger.info("Group {} patch operation idempotent - value already exists", id);
+                } else if (result.getResultCode() == ResultCode.NO_SUCH_ATTRIBUTE) {
+                    logger.info("Group {} patch operation idempotent - attribute already removed or does not exist", id);
+                } else {
+                    logger.info("Successfully patched group {} with {} modifications", id, modifications.size());
+                }
             }
             
             // Return updated group
@@ -922,6 +981,36 @@ public class LdapRepository implements ScimRepository {
             return updatedGroup;
             
         } catch (LDAPException e) {
+            // Per SCIM RFC 7644, treat ATTRIBUTE_OR_VALUE_EXISTS and NO_SUCH_ATTRIBUTE as successful idempotent operations
+            if (e.getResultCode() == ResultCode.ATTRIBUTE_OR_VALUE_EXISTS) {
+                logger.info("Group {} patch operation idempotent - value already exists: {}", id, e.getMessage());
+                // Return the current state of the group
+                try {
+                    GroupResource updatedGroup = getGroupById(id);
+                    Meta meta = updatedGroup.getMeta() != null ? updatedGroup.getMeta() : new Meta();
+                    meta.setLastModified(Calendar.getInstance());
+                    meta.setVersion(generateVersion());
+                    updatedGroup.setMeta(meta);
+                    return updatedGroup;
+                } catch (Exception ex) {
+                    logger.error("Failed to retrieve group after idempotent operation: {}", id, ex);
+                    throw new RuntimeException("Failed to retrieve group: " + ex.getMessage(), ex);
+                }
+            } else if (e.getResultCode() == ResultCode.NO_SUCH_ATTRIBUTE) {
+                logger.info("Group {} patch operation idempotent - attribute already removed or does not exist: {}", id, e.getMessage());
+                // Return the current state of the group
+                try {
+                    GroupResource updatedGroup = getGroupById(id);
+                    Meta meta = updatedGroup.getMeta() != null ? updatedGroup.getMeta() : new Meta();
+                    meta.setLastModified(Calendar.getInstance());
+                    meta.setVersion(generateVersion());
+                    updatedGroup.setMeta(meta);
+                    return updatedGroup;
+                } catch (Exception ex) {
+                    logger.error("Failed to retrieve group after idempotent operation: {}", id, ex);
+                    throw new RuntimeException("Failed to retrieve group: " + ex.getMessage(), ex);
+                }
+            }
             logger.error("LDAP error patching group: {}", id, e);
             throw new RuntimeException("Failed to patch group: " + e.getMessage(), e);
         } catch (Exception e) {
@@ -1057,5 +1146,36 @@ public class LdapRepository implements ScimRepository {
             default:
                 return scimAttribute;
         }
+    }
+    
+    /**
+     * Parse a SCIM filter expression in the format "value eq \"uuid\"" and extract the UUID.
+     * Used for path-based member removal operations like: members[value eq "uuid"]
+     */
+    private String parseValueEqualsFilter(String path) {
+        try {
+            // Extract the filter expression from the path
+            // Expected format: members[value eq "uuid"]
+            int startIndex = path.indexOf('[');
+            int endIndex = path.lastIndexOf(']');
+            
+            if (startIndex == -1 || endIndex == -1 || startIndex >= endIndex) {
+                return null;
+            }
+            
+            String filterExpression = path.substring(startIndex + 1, endIndex).trim();
+            
+            // Parse the filter expression - support "value eq \"uuid\"" format
+            if (filterExpression.startsWith("value eq ")) {
+                String quotedValue = filterExpression.substring(9).trim();
+                // Remove surrounding quotes
+                if (quotedValue.startsWith("\"") && quotedValue.endsWith("\"")) {
+                    return quotedValue.substring(1, quotedValue.length() - 1);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Failed to parse value equals filter from path: {}", path, e);
+        }
+        return null;
     }
 }

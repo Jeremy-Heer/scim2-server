@@ -113,15 +113,10 @@ public class UsersController {
                             }
                             """)))
             @RequestBody UserResource user, HttpServletRequest request) {
-        // Reject requests that include an ID - IDs are server-generated
-        if (user.getId() != null && !user.getId().trim().isEmpty()) {
-            throw new InvalidRequestException("ID must not be provided in create requests. IDs are server-generated.");
-        }
-        
-        // Reject requests that include meta data - meta is server-generated
-        if (user.getMeta() != null) {
-            throw new InvalidRequestException("Meta data must not be provided in create requests. Meta information is server-generated.");
-        }
+        // Ignore readOnly attributes per RFC 7644 Section 3.5.1
+        // IDs and meta are server-generated, so we ignore any provided by the client
+        user.setId(null);
+        user.setMeta(null);
         
         validateUser(user);
         
@@ -173,15 +168,14 @@ public class UsersController {
             throw new ResourceNotFoundException("User", id);
         }
         
-        // Reject attempts to change the ID or provide a different ID
+        // Reject attempts to change the ID - validate if provided
         if (user.getId() != null && !user.getId().equals(id)) {
             throw new InvalidRequestException("ID in request body must match the ID in the URL path. IDs are immutable.");
         }
         
-        // Reject requests that include meta data - meta is server-generated
-        if (user.getMeta() != null) {
-            throw new InvalidRequestException("Meta data must not be provided in update requests. Meta information is server-generated.");
-        }
+        // Ignore readOnly attributes per RFC 7644 Section 3.5.1
+        // Meta is server-generated, so we ignore any provided by the client
+        user.setMeta(null);
         
         validateUser(user);
         

@@ -1,10 +1,13 @@
 package com.scim2.server.scim2_server.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
@@ -28,6 +31,9 @@ public class HttpLoggingFilter implements Filter {
     private static final String REQUEST_PREFIX = "REQUEST  >>> ";
     private static final String RESPONSE_PREFIX = "RESPONSE <<< ";
     private static final String SEPARATOR = "─".repeat(80);
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -102,7 +108,8 @@ public class HttpLoggingFilter implements Filter {
         if (requestBody != null && !requestBody.isEmpty()) {
             StringBuilder requestBodyLog = new StringBuilder();
             requestBodyLog.append(REQUEST_PREFIX).append("Body:\n");
-            requestBodyLog.append(REQUEST_PREFIX).append(requestBody).append("\n");
+            String prettyBody = prettyPrintJson(requestBody);
+            requestBodyLog.append(prettyBody).append("\n");
             logger.info(requestBodyLog.toString());
         }
     }
@@ -127,7 +134,8 @@ public class HttpLoggingFilter implements Filter {
         String responseBody = getResponseBody(response);
         if (responseBody != null && !responseBody.isEmpty()) {
             responseLog.append(RESPONSE_PREFIX).append("Body:\n");
-            responseLog.append(RESPONSE_PREFIX).append(responseBody).append("\n");
+            String prettyBody = prettyPrintJson(responseBody);
+            responseLog.append(prettyBody).append("\n");
         }
         
         responseLog.append(SEPARATOR).append("\n");
@@ -165,6 +173,33 @@ public class HttpLoggingFilter implements Filter {
             }
         }
         return "";
+    }
+
+    /**
+     * Pretty prints JSON content with proper indentation
+     * @param json The JSON string to format
+     * @return Pretty-printed JSON, or original string if not valid JSON
+     */
+    private String prettyPrintJson(String json) {
+        if (json == null || json.isEmpty()) {
+            return json;
+        }
+        
+        try {
+            // Parse the JSON string
+            Object jsonObject = objectMapper.readValue(json, Object.class);
+            
+            // Create a new ObjectMapper with pretty printing enabled
+            ObjectMapper prettyMapper = new ObjectMapper();
+            prettyMapper.enable(SerializationFeature.INDENT_OUTPUT);
+            
+            // Convert back to pretty-printed string
+            return prettyMapper.writeValueAsString(jsonObject);
+        } catch (Exception e) {
+            // If JSON parsing fails, return original string
+            logger.debug("Content is not valid JSON, returning as-is", e);
+            return json;
+        }
     }
 
     @Override
