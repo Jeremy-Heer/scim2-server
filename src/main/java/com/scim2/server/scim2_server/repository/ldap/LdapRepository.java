@@ -12,6 +12,9 @@ import com.unboundid.ldap.sdk.*;
 import com.unboundid.ldap.sdk.controls.ServerSideSortRequestControl;
 import com.unboundid.ldap.sdk.controls.SimplePagedResultsControl;
 import com.unboundid.ldap.sdk.controls.SortKey;
+import com.unboundid.ldap.sdk.controls.VirtualListViewRequestControl;
+import com.unboundid.ldap.sdk.controls.VirtualListViewResponseControl;
+import com.scim2.server.scim2_server.model.ScimSearchResult;
 import com.unboundid.scim2.common.messages.PatchRequest;
 import com.unboundid.scim2.common.messages.PatchOperation;
 import com.unboundid.scim2.common.types.*;
@@ -154,48 +157,6 @@ public class LdapRepository implements ScimRepository {
             logger.error("Failed to get user by ID: {}", id, e);
             return null;
         }
-    }
-    
-    @Override
-    public int getTotalUsers(String filter) {
-        try {
-            Filter ldapFilter;
-            if (filter != null && !filter.trim().isEmpty()) {
-                // Convert SCIM filter to LDAP filter
-                ldapFilter = filterConverter.convertFilter(filter);
-                // Combine with objectClass filter
-                ldapFilter = Filter.createANDFilter(
-                    Filter.createEqualityFilter("objectClass", "scimUser"),
-                    ldapFilter
-                );
-            } else {
-                ldapFilter = Filter.createEqualityFilter("objectClass", "scimUser");
-            }
-            
-            SearchRequest searchRequest = new SearchRequest(
-                connectionService.getLdapProperties().getUserBaseDn(),
-                SearchScope.SUB,
-                ldapFilter,
-                "1.1" // Don't return any attributes, just count
-            );
-            
-            SearchResult result = connectionService.search(searchRequest);
-            return result.getEntryCount();
-            
-        } catch (Exception e) {
-            logger.error("Failed to get total users with filter: {}", filter, e);
-            return 0;
-        }
-    }
-    
-    @Override
-    public int getTotalUsers(com.unboundid.scim2.common.messages.SearchRequest searchRequest) {
-        // Extract filter from SearchRequest
-        String filter = null;
-        if (searchRequest.getFilter() != null) {
-            filter = searchRequest.getFilter().toString();
-        }
-        return getTotalUsers(filter);
     }
     
     @Override
@@ -421,7 +382,7 @@ public class LdapRepository implements ScimRepository {
     }
     
     @Override
-    public List<UserResource> searchUsers(String filter, String attributes, String excludedAttributes,
+    public ScimSearchResult<UserResource> searchUsers(String filter, String attributes, String excludedAttributes,
                                          String sortBy, String sortOrder, int startIndex, int count) {
         try {
             // Build LDAP filter
@@ -444,25 +405,43 @@ public class LdapRepository implements ScimRepository {
                 USER_ATTRIBUTES
             );
             
-            // Add server-side sort control if sortBy is specified
-            if (sortBy != null && !sortBy.isEmpty()) {
-                boolean ascending = !"descending".equalsIgnoreCase(sortOrder);
-                SortKey sortKey = new SortKey(mapScimAttributeToLdap(sortBy), ascending);
-                searchRequest.addControl(new ServerSideSortRequestControl(sortKey));
-            }
+            // Default sort attribute to uid for users if not specified
+            String effectiveSortBy = (sortBy != null && !sortBy.isEmpty()) ? sortBy : "userName";
+            boolean ascending = !"descending".equalsIgnoreCase(sortOrder);
+            String ldapSortAttribute = mapScimAttributeToLdap(effectiveSortBy);
+            SortKey sortKey = new SortKey(ldapSortAttribute, ascending);
+            searchRequest.addControl(new ServerSideSortRequestControl(sortKey));
             
-            // Add pagination control
-            if (count > 0) {
-                // LDAP uses 0-based, SCIM uses 1-based indexing
-                int ldapStartIndex = Math.max(0, startIndex - 1);
-                searchRequest.addControl(new SimplePagedResultsControl(count));
-                // Note: For subsequent pages, we'd need to track the cookie
-            }
+            // Add VLV control for efficient pagination
+            // VLV parameters: targetOffset, beforeCount, afterCount, contentCount, contextID
+            int beforeCount = 0; // Don't retrieve entries before the target
+            int afterCount = (count == 0) ? 0 : count - 1; // Target + afterCount entries = count total
+            int targetOffset = startIndex; // SCIM uses 1-based, VLV also uses 1-based for targetOffset
+            VirtualListViewRequestControl vlvRequest = new VirtualListViewRequestControl(
+                targetOffset,  // target position (1-based)
+                beforeCount,   // beforeCount (entries before target)
+                afterCount,    // afterCount (entries after target, not including target)
+                0,             // contentCount (0 = unknown, server will provide)
+                null           // contextID (null for first request)
+            );
+            searchRequest.addControl(vlvRequest);
             
-            searchRequest.setSizeLimit(count > 0 ? count : connectionService.getLdapProperties().getSearch().getSizeLimit());
+            searchRequest.setSizeLimit(0); // VLV manages size, don't set additional limit
             searchRequest.setTimeLimitSeconds(connectionService.getLdapProperties().getSearch().getTimeLimitSeconds());
             
             SearchResult result = connectionService.search(searchRequest);
+            
+            // Extract total count from VLV response
+            int totalResults = 0;
+            VirtualListViewResponseControl vlvResponse = 
+                VirtualListViewResponseControl.get(result);
+            if (vlvResponse != null) {
+                totalResults = vlvResponse.getContentCount();
+                ResultCode vlvResultCode = vlvResponse.getResultCode();
+                if (vlvResultCode != ResultCode.SUCCESS) {
+                    logger.warn("VLV response result code: {}", vlvResultCode);
+                }
+            }
             
             List<UserResource> users = result.getSearchEntries().stream()
                 .map(entry -> attributeMapper.ldapEntryToUser(entry, connectionService))
@@ -475,27 +454,19 @@ public class LdapRepository implements ScimRepository {
                     .collect(Collectors.toList());
             }
             
-            // Apply pagination (skip to startIndex)
-            if (startIndex > 1) {
-                int skipCount = startIndex - 1;
-                users = users.stream().skip(skipCount).collect(Collectors.toList());
-            }
+            return new ScimSearchResult<>(users, totalResults);
             
-            // Limit to count
-            if (count > 0 && users.size() > count) {
-                users = users.subList(0, count);
-            }
-            
-            return users;
-            
+        } catch (LDAPException e) {
+            logger.error("Failed to search users: {}", e.getMessage(), e);
+            return new ScimSearchResult<>(Collections.emptyList(), 0);
         } catch (Exception e) {
             logger.error("Failed to search users", e);
-            return Collections.emptyList();
+            return new ScimSearchResult<>(Collections.emptyList(), 0);
         }
     }
     
     @Override
-    public List<UserResource> searchUsers(com.unboundid.scim2.common.messages.SearchRequest searchRequest) {
+    public ScimSearchResult<UserResource> searchUsers(com.unboundid.scim2.common.messages.SearchRequest searchRequest) {
         // Parse SearchRequest and extract parameters
         String filter = null;
         if (searchRequest.getFilter() != null) {
@@ -574,42 +545,6 @@ public class LdapRepository implements ScimRepository {
             logger.error("Failed to get group by ID: {}", id, e);
             return null;
         }
-    }
-    
-    @Override
-    public int getTotalGroups(String filter) {
-        try {
-            Filter ldapFilter;
-            if (filter != null && !filter.trim().isEmpty()) {
-                ldapFilter = filterConverter.convertFilter(filter);
-                ldapFilter = Filter.createANDFilter(
-                    Filter.createEqualityFilter("objectClass", "scimGroup"),
-                    ldapFilter
-                );
-            } else {
-                ldapFilter = Filter.createEqualityFilter("objectClass", "scimGroup");
-            }
-            
-            SearchRequest searchRequest = new SearchRequest(
-                connectionService.getLdapProperties().getGroupBaseDn(),
-                SearchScope.SUB,
-                ldapFilter,
-                "1.1"
-            );
-            
-            SearchResult result = connectionService.search(searchRequest);
-            return result.getEntryCount();
-            
-        } catch (Exception e) {
-            logger.error("Failed to get total groups with filter: {}", filter, e);
-            return 0;
-        }
-    }
-    
-    @Override
-    public int getTotalGroups(com.unboundid.scim2.common.messages.SearchRequest searchRequest) {
-        // TODO: Implement proper SearchRequest parsing
-        return getTotalGroups((String) null);
     }
     
     @Override
@@ -1049,7 +984,7 @@ public class LdapRepository implements ScimRepository {
     }
     
     @Override
-    public List<GroupResource> searchGroups(String filter, String attributes, String excludedAttributes,
+    public ScimSearchResult<GroupResource> searchGroups(String filter, String attributes, String excludedAttributes,
                                            String sortBy, String sortOrder, int startIndex, int count) {
         try {
             Filter ldapFilter;
@@ -1070,20 +1005,42 @@ public class LdapRepository implements ScimRepository {
                 GROUP_ATTRIBUTES
             );
             
-            if (sortBy != null && !sortBy.isEmpty()) {
-                boolean ascending = !"descending".equalsIgnoreCase(sortOrder);
-                SortKey sortKey = new SortKey(mapScimAttributeToLdap(sortBy), ascending);
-                searchRequest.addControl(new ServerSideSortRequestControl(sortKey));
-            }
+            // Default sort attribute to cn for groups if not specified
+            String effectiveSortBy = (sortBy != null && !sortBy.isEmpty()) ? sortBy : "displayName";
+            boolean ascending = !"descending".equalsIgnoreCase(sortOrder);
+            String ldapSortAttribute = mapScimAttributeToLdap(effectiveSortBy);
+            SortKey sortKey = new SortKey(ldapSortAttribute, ascending);
+            searchRequest.addControl(new ServerSideSortRequestControl(sortKey));
             
-            if (count > 0) {
-                searchRequest.addControl(new SimplePagedResultsControl(count));
-            }
+            // Add VLV control for efficient pagination
+            int beforeCount = 0;
+            int afterCount = (count == 0) ? 0 : count - 1;
+            int targetOffset = startIndex;
+            VirtualListViewRequestControl vlvRequest = new VirtualListViewRequestControl(
+                targetOffset,
+                beforeCount,
+                afterCount,
+                0,
+                null
+            );
+            searchRequest.addControl(vlvRequest);
             
-            searchRequest.setSizeLimit(count > 0 ? count : connectionService.getLdapProperties().getSearch().getSizeLimit());
+            searchRequest.setSizeLimit(0);
             searchRequest.setTimeLimitSeconds(connectionService.getLdapProperties().getSearch().getTimeLimitSeconds());
             
             SearchResult result = connectionService.search(searchRequest);
+            
+            // Extract total count from VLV response
+            int totalResults = 0;
+            VirtualListViewResponseControl vlvResponse = 
+                VirtualListViewResponseControl.get(result);
+            if (vlvResponse != null) {
+                totalResults = vlvResponse.getContentCount();
+                ResultCode vlvResultCode = vlvResponse.getResultCode();
+                if (vlvResultCode != ResultCode.SUCCESS) {
+                    logger.warn("VLV response result code: {}", vlvResultCode);
+                }
+            }
             
             List<GroupResource> groups = result.getSearchEntries().stream()
                 .map(entry -> attributeMapper.ldapEntryToGroup(entry, connectionService))
@@ -1095,27 +1052,41 @@ public class LdapRepository implements ScimRepository {
                     .collect(Collectors.toList());
             }
             
-            if (startIndex > 1) {
-                int skipCount = startIndex - 1;
-                groups = groups.stream().skip(skipCount).collect(Collectors.toList());
-            }
+            return new ScimSearchResult<>(groups, totalResults);
             
-            if (count > 0 && groups.size() > count) {
-                groups = groups.subList(0, count);
-            }
-            
-            return groups;
-            
+        } catch (LDAPException e) {
+            logger.error("Failed to search groups: {}", e.getMessage(), e);
+            return new ScimSearchResult<>(Collections.emptyList(), 0);
         } catch (Exception e) {
             logger.error("Failed to search groups", e);
-            return Collections.emptyList();
+            return new ScimSearchResult<>(Collections.emptyList(), 0);
         }
     }
     
     @Override
-    public List<GroupResource> searchGroups(com.unboundid.scim2.common.messages.SearchRequest searchRequest) {
-        // TODO: Implement proper SearchRequest parsing
-        return searchGroups(null, null, null, null, null, 1, 100);
+    public ScimSearchResult<GroupResource> searchGroups(com.unboundid.scim2.common.messages.SearchRequest searchRequest) {
+        // Parse SearchRequest and extract parameters
+        String filter = null;
+        if (searchRequest.getFilter() != null) {
+            filter = searchRequest.getFilter().toString();
+        }
+        
+        String attributes = null;
+        if (searchRequest.getAttributes() != null && !searchRequest.getAttributes().isEmpty()) {
+            attributes = String.join(",", searchRequest.getAttributes());
+        }
+        
+        String excludedAttributes = null;
+        if (searchRequest.getExcludedAttributes() != null && !searchRequest.getExcludedAttributes().isEmpty()) {
+            excludedAttributes = String.join(",", searchRequest.getExcludedAttributes());
+        }
+        
+        String sortBy = searchRequest.getSortBy();
+        String sortOrder = searchRequest.getSortOrder() != null ? searchRequest.getSortOrder().getName() : null;
+        int startIndex = searchRequest.getStartIndex() != null ? searchRequest.getStartIndex() : 1;
+        int count = searchRequest.getCount() != null ? searchRequest.getCount() : 100;
+        
+        return searchGroups(filter, attributes, excludedAttributes, sortBy, sortOrder, startIndex, count);
     }
     
     // ========== Helper Methods ==========

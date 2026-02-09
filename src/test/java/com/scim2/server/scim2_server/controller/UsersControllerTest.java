@@ -1,5 +1,6 @@
 package com.scim2.server.scim2_server.controller;
 
+import com.scim2.server.scim2_server.model.ScimSearchResult;
 import com.scim2.server.scim2_server.repository.ScimRepository;
 import com.scim2.server.scim2_server.security.ScimAuthenticationFilter;
 import com.scim2.server.scim2_server.security.SecurityConfig;
@@ -64,10 +65,9 @@ public class UsersControllerTest {
     @Test
     @WithMockUser
     void testGetUsers_Success() throws Exception {
-        when(scimRepository.searchUsers(any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(Arrays.asList(testUser));
-        when(scimRepository.getTotalUsers(anyString()))
-            .thenReturn(1);
+        ScimSearchResult<UserResource> searchResult = new ScimSearchResult<>(Arrays.asList(testUser), 1);
+        when(scimRepository.searchUsers(any(), any(), any(), any(), any(), anyInt(), anyInt()))
+                .thenReturn(searchResult);
         
         mockMvc.perform(get("/scim/v2/Users")
                 .header("Authorization", "Bearer scim-token-123")

@@ -4,6 +4,7 @@ import com.scim2.server.scim2_server.exception.ResourceNotFoundException;
 import com.scim2.server.scim2_server.exception.InvalidRequestException;
 import com.scim2.server.scim2_server.repository.ScimRepository;
 import com.scim2.server.scim2_server.model.ScimListResponse;
+import com.scim2.server.scim2_server.model.ScimSearchResult;
 import com.unboundid.scim2.common.types.UserResource;
 import com.unboundid.scim2.common.types.Meta;
 import com.unboundid.scim2.common.messages.PatchRequest;
@@ -53,13 +54,12 @@ public class UsersController {
         int effectiveStartIndex = (startIndex != null) ? startIndex : 1;
         int effectiveCount = (count != null) ? count : 100; // Default to 100 if not specified
         
-        List<UserResource> users = scimRepository.searchUsers(filter, attributes, excludedAttributes, 
+        ScimSearchResult<UserResource> searchResult = scimRepository.searchUsers(filter, attributes, excludedAttributes, 
                                                                sortBy, sortOrder, effectiveStartIndex, effectiveCount);
-        int totalResults = scimRepository.getTotalUsers(filter);
         
         ScimListResponse<UserResource> response = new ScimListResponse<>(
-            totalResults,
-            users,
+            searchResult.getTotalResults(),
+            searchResult.getResources(),
             effectiveStartIndex
         );
         
@@ -262,12 +262,11 @@ public class UsersController {
                             }
                             """)))
             @RequestBody SearchRequest searchRequest) {
-        List<UserResource> users = scimRepository.searchUsers(searchRequest);
-        int totalResults = scimRepository.getTotalUsers(searchRequest);
+        ScimSearchResult<UserResource> searchResult = scimRepository.searchUsers(searchRequest);
         
         ScimListResponse<UserResource> response = new ScimListResponse<>(
-            totalResults,
-            users,
+            searchResult.getTotalResults(),
+            searchResult.getResources(),
             searchRequest.getStartIndex() != null ? searchRequest.getStartIndex() : 1
         );
         

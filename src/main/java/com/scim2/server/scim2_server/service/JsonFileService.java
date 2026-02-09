@@ -3,6 +3,7 @@ package com.scim2.server.scim2_server.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.scim2.server.scim2_server.model.ScimSearchResult;
 import com.unboundid.scim2.common.types.UserResource;
 import com.unboundid.scim2.common.types.GroupResource;
 import com.unboundid.scim2.common.types.Member;
@@ -229,7 +230,7 @@ public class JsonFileService {
     }
     
     // Search operations
-    public List<UserResource> searchUsers(String filter, String attributes, String excludedAttributes, 
+    public ScimSearchResult<UserResource> searchUsers(String filter, String attributes, String excludedAttributes, 
                                          String sortBy, String sortOrder, Integer startIndex, Integer count) {
         List<UserResource> allUsers = new ArrayList<>(users.values());
         
@@ -237,6 +238,9 @@ public class JsonFileService {
         if (filter != null && !filter.trim().isEmpty()) {
             allUsers = sdkFilterService.filterUsers(allUsers, filter);
         }
+        
+        // Store total before pagination
+        int totalResults = allUsers.size();
         
         // Apply sorting
         if (sortBy != null && !sortBy.trim().isEmpty()) {
@@ -248,18 +252,20 @@ public class JsonFileService {
         int end = (count != null && count > 0) ? Math.min(start + count, allUsers.size()) : allUsers.size();
         
         if (start >= allUsers.size()) {
-            return new ArrayList<>();
+            return new ScimSearchResult<>(new ArrayList<>(), totalResults);
         }
         
         List<UserResource> paginatedUsers = allUsers.subList(start, end);
         
         // Apply attribute selection to each user
-        return paginatedUsers.stream()
+        List<UserResource> results = paginatedUsers.stream()
                 .map(user -> scimAttributeService.selectAttributes(user, attributes, excludedAttributes))
                 .toList();
+        
+        return new ScimSearchResult<>(results, totalResults);
     }
 
-    public List<GroupResource> searchGroups(String filter, String attributes, String excludedAttributes, 
+    public ScimSearchResult<GroupResource> searchGroups(String filter, String attributes, String excludedAttributes, 
                                            String sortBy, String sortOrder, Integer startIndex, Integer count) {
         List<GroupResource> allGroups = new ArrayList<>(groups.values());
         
@@ -267,6 +273,9 @@ public class JsonFileService {
         if (filter != null && !filter.trim().isEmpty()) {
             allGroups = sdkFilterService.filterGroups(allGroups, filter);
         }
+        
+        // Store total before pagination
+        int totalResults = allGroups.size();
         
         // Apply sorting
         if (sortBy != null && !sortBy.trim().isEmpty()) {
@@ -278,19 +287,21 @@ public class JsonFileService {
         int end = (count != null && count > 0) ? Math.min(start + count, allGroups.size()) : allGroups.size();
         
         if (start >= allGroups.size()) {
-            return new ArrayList<>();
+            return new ScimSearchResult<>(new ArrayList<>(), totalResults);
         }
         
         List<GroupResource> paginatedGroups = allGroups.subList(start, end);
         
         // Apply attribute selection to each group
-        return paginatedGroups.stream()
+        List<GroupResource> results = paginatedGroups.stream()
                 .map(group -> scimAttributeService.selectAttributes(group, attributes, excludedAttributes))
                 .toList();
+        
+        return new ScimSearchResult<>(results, totalResults);
     }
     
     // SearchRequest-based search operations
-    public List<UserResource> searchUsers(SearchRequest searchRequest) {
+    public ScimSearchResult<UserResource> searchUsers(SearchRequest searchRequest) {
         String filter = searchRequest.getFilter();
         String attributes = searchRequest.getAttributes() != null ? String.join(",", searchRequest.getAttributes()) : null;
         String excludedAttributes = searchRequest.getExcludedAttributes() != null ? String.join(",", searchRequest.getExcludedAttributes()) : null;
@@ -302,7 +313,7 @@ public class JsonFileService {
         return searchUsers(filter, attributes, excludedAttributes, sortBy, sortOrder, startIndex, count);
     }
 
-    public List<GroupResource> searchGroups(SearchRequest searchRequest) {
+    public ScimSearchResult<GroupResource> searchGroups(SearchRequest searchRequest) {
         String filter = searchRequest.getFilter();
         String attributes = searchRequest.getAttributes() != null ? String.join(",", searchRequest.getAttributes()) : null;
         String excludedAttributes = searchRequest.getExcludedAttributes() != null ? String.join(",", searchRequest.getExcludedAttributes()) : null;
