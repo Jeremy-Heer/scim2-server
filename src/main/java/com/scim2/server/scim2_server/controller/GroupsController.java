@@ -4,6 +4,7 @@ import com.scim2.server.scim2_server.exception.ResourceNotFoundException;
 import com.scim2.server.scim2_server.exception.InvalidRequestException;
 import com.scim2.server.scim2_server.repository.ScimRepository;
 import com.scim2.server.scim2_server.model.ScimListResponse;
+import com.scim2.server.scim2_server.model.ScimSearchResult;
 import com.unboundid.scim2.common.types.GroupResource;
 import com.unboundid.scim2.common.types.Meta;
 import com.unboundid.scim2.common.messages.PatchRequest;
@@ -59,13 +60,12 @@ public class GroupsController {
         int effectiveStartIndex = (startIndex != null) ? startIndex : 1;
         int effectiveCount = (count != null) ? count : 100; // Default to 100 if not specified
         
-        List<GroupResource> groups = scimRepository.searchGroups(filter, attributes, excludedAttributes, 
+        ScimSearchResult<GroupResource> searchResult = scimRepository.searchGroups(filter, attributes, excludedAttributes, 
                                                                   sortBy, sortOrder, effectiveStartIndex, effectiveCount);
-        int totalResults = scimRepository.getTotalGroups(filter);
         
         ScimListResponse<GroupResource> response = new ScimListResponse<>(
-            totalResults,
-            groups,
+            searchResult.getTotalResults(),
+            searchResult.getResources(),
             effectiveStartIndex
         );
         
@@ -240,15 +240,14 @@ public class GroupsController {
                             }
                             """)))
             @RequestBody SearchRequest searchRequest) throws ScimException, IOException {
-        List<GroupResource> groups = scimRepository.searchGroups(searchRequest);
-        int totalResults = scimRepository.getTotalGroups(searchRequest);
+        ScimSearchResult<GroupResource> searchResult = scimRepository.searchGroups(searchRequest);
         
         ScimListResponse<GroupResource> response = new ScimListResponse<>();
         response.setSchemas(Collections.singletonList("urn:ietf:params:scim:api:messages:2.0:ListResponse"));
-        response.setTotalResults(totalResults);
+        response.setTotalResults(searchResult.getTotalResults());
         response.setStartIndex(searchRequest.getStartIndex() != null ? searchRequest.getStartIndex() : 1);
-        response.setItemsPerPage(searchRequest.getCount() != null ? searchRequest.getCount() : totalResults);
-        response.setResources(groups);
+        response.setItemsPerPage(searchResult.getResources().size());
+        response.setResources(searchResult.getResources());
         
         return ResponseEntity.ok()
             .contentType(MediaType.parseMediaType("application/scim+json"))

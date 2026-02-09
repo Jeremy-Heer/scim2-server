@@ -1,5 +1,6 @@
 package com.scim2.server.scim2_server.repository;
 
+import com.scim2.server.scim2_server.model.ScimSearchResult;
 import com.unboundid.scim2.common.messages.PatchRequest;
 import com.unboundid.scim2.common.messages.SearchRequest;
 import com.unboundid.scim2.common.types.GroupResource;
@@ -52,22 +53,6 @@ public interface ScimRepository {
     UserResource getUserById(String id, String attributes, String excludedAttributes);
     
     /**
-     * Get total count of users matching the optional filter.
-     * 
-     * @param filter SCIM filter expression (e.g., "userName eq \"john\"") or null for all users
-     * @return Total count of matching users
-     */
-    int getTotalUsers(String filter);
-    
-    /**
-     * Get total count of users matching the search request filter.
-     * 
-     * @param searchRequest SCIM SearchRequest with filter
-     * @return Total count of matching users
-     */
-    int getTotalUsers(SearchRequest searchRequest);
-    
-    /**
      * Create a new user (POST operation).
      * Generates a new UUID and sets server-controlled metadata.
      * 
@@ -106,6 +91,7 @@ public interface ScimRepository {
     
     /**
      * Search users with filtering, sorting, pagination, and attribute selection.
+     * Returns both the matching resources and total count in a single LDAP query using VLV.
      * 
      * @param filter SCIM filter expression or null
      * @param attributes Comma-separated attributes to include
@@ -114,18 +100,19 @@ public interface ScimRepository {
      * @param sortOrder "ascending" or "descending"
      * @param startIndex 1-based start index for pagination
      * @param count Number of results per page
-     * @return List of matching UserResources
+     * @return ScimSearchResult containing list of matching UserResources and total count
      */
-    List<UserResource> searchUsers(String filter, String attributes, String excludedAttributes,
+    ScimSearchResult<UserResource> searchUsers(String filter, String attributes, String excludedAttributes,
                                    String sortBy, String sortOrder, int startIndex, int count);
     
     /**
      * Search users using SCIM SearchRequest (POST .search).
+     * Returns both the matching resources and total count.
      * 
      * @param searchRequest SCIM SearchRequest with all search parameters
-     * @return List of matching UserResources
+     * @return ScimSearchResult containing list of matching UserResources and total count
      */
-    List<UserResource> searchUsers(SearchRequest searchRequest);
+    ScimSearchResult<UserResource> searchUsers(SearchRequest searchRequest);
     
     // ========== Group CRUD Operations ==========
     
@@ -153,22 +140,6 @@ public interface ScimRepository {
      * @return GroupResource with selected attributes or null if not found
      */
     GroupResource getGroupById(String id, String attributes, String excludedAttributes);
-    
-    /**
-     * Get total count of groups matching the optional filter.
-     * 
-     * @param filter SCIM filter expression or null for all groups
-     * @return Total count of matching groups
-     */
-    int getTotalGroups(String filter);
-    
-    /**
-     * Get total count of groups matching the search request filter.
-     * 
-     * @param searchRequest SCIM SearchRequest with filter
-     * @return Total count of matching groups
-     */
-    int getTotalGroups(SearchRequest searchRequest);
     
     /**
      * Create a new group (POST operation).
@@ -209,6 +180,7 @@ public interface ScimRepository {
     
     /**
      * Search groups with filtering, sorting, pagination, and attribute selection.
+     * Returns both the matching resources and total count in a single LDAP query using VLV.
      * 
      * @param filter SCIM filter expression or null
      * @param attributes Comma-separated attributes to include
@@ -217,16 +189,17 @@ public interface ScimRepository {
      * @param sortOrder "ascending" or "descending"
      * @param startIndex 1-based start index for pagination
      * @param count Number of results per page
-     * @return List of matching GroupResources
+     * @return ScimSearchResult containing list of matching GroupResources and total count
      */
-    List<GroupResource> searchGroups(String filter, String attributes, String excludedAttributes,
+    ScimSearchResult<GroupResource> searchGroups(String filter, String attributes, String excludedAttributes,
                                      String sortBy, String sortOrder, int startIndex, int count);
     
     /**
      * Search groups using SCIM SearchRequest (POST .search).
+     * Returns both the matching resources and total count.
      * 
      * @param searchRequest SCIM SearchRequest with all search parameters
-     * @return List of matching GroupResources
+     * @return ScimSearchResult containing list of matching GroupResources and total count
      */
-    List<GroupResource> searchGroups(SearchRequest searchRequest);
+    ScimSearchResult<GroupResource> searchGroups(SearchRequest searchRequest);
 }
